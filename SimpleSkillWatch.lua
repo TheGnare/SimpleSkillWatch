@@ -1,8 +1,8 @@
--- SimpleSkillWatch v1.0.0 for World of Warcraft: Forever (interface 16001)
+-- SimpleSkillWatch v1.0.1 for World of Warcraft: Forever (interface 16001)
 -- Shows weapon/defense and profession skills as colored bars in a movable frame.
 
 local ADDON, ns = ...
-ns.VERSION = "1.0.0"
+ns.VERSION = "1.0.1"
 ns.NAME = "SimpleSkillWatch"
 
 ---------------------------------------------------------------------------
