@@ -221,6 +221,12 @@ function CreateFrame(kind, name)
 end
 
 UIParent = newObj("Frame")
+-- The minimap: 140 wide, centered at 500,500. CURSOR is the mouse position.
+Minimap = newObj("Minimap")
+Minimap.width = 140
+Minimap.GetCenter = function() return 500, 500 end
+CURSOR = { 0, 0 }
+function GetCursorPosition() return CURSOR[1], CURSOR[2] end
 GameTooltip = newObj("GameTooltip")
 GameTooltip.shown = false
 GameFontHighlightSmall = newObj("Font")

@@ -17,6 +17,7 @@ A small, movable frame for **World of Warcraft: Forever** that shows your weapon
 - **Only show equipped weapon**: optionally hide weapon skills you aren't using, so the frame shows just your equipped weapons plus Defense (and Unarmed if you like). Updates as you swap.
 - **Stacked or side by side**: Weapons above Professions, or next to each other (either way round).
 - **Lock** the frame in place to make it click-through. The padlock in the corner stays clickable either way: open when unlocked, closed (and dimmed) when locked. Each character has its own lock, and new characters start unlocked.
+- **Minimap button**: left-click opens the settings, right-click shows or hides the frame, and you can drag it around the minimap's edge (each character keeps its own spot). Turn it off on the Frame tab if you don't want it.
 - **Profiles**: save your settings under a name and use them on other characters. Each character uses one profile, named after its class by default.
 - **Light on resources**: no polling or per-frame updates. The frame redraws only when the game signals a skill, equipment or durability change, and bursts of signals are combined into one redraw.
 
@@ -40,7 +41,7 @@ Open the settings window with `/sskw`, by right-clicking the frame while it's un
 
 | Tab | What's there |
 |---|---|
-| **Frame** | Show frame, show title, lock (click-through, this character only), grow direction, layout (stacked, side by side, flipped), scale, width (per column), background and bar opacity |
+| **Frame** | Show frame, show title, lock (click-through, this character only), minimap button, grow direction, layout (stacked, side by side, flipped), scale, width (per column), background and bar opacity |
 | **Text** | Font and font size |
 | **Skills** | Only show equipped weapon (plus Defense, optionally Unarmed), and checkboxes to hide or show individual skills |
 | **Alerts** | Weapon thresholds and the low weapon skill warning; thrown charges and the low-charges alert; profession training rules and skill cap; profession alerts, their two sounds, whether the message also shows on screen and for how long |
@@ -50,7 +51,7 @@ Every slider, the font and both sounds have a revert arrow that restores the def
 
 ### Profiles
 
-A profile holds every setting plus your hidden skills. Frame position, lock and the list of learned skills always stay per character.
+A profile holds every setting plus your hidden skills. Frame position, lock, the minimap button's spot and the list of learned skills always stay per character.
 
 - **New characters** get a profile named after their class (e.g. "Warrior"). If a profile named **Default** exists, the new profile starts as a copy of it; otherwise it starts from the built-in defaults.
 - **Same settings on every character**: pick one profile (e.g. "Main") on each of them. Changes made on one show up on all characters using it.
@@ -66,6 +67,7 @@ A profile holds every setting plus your hidden skills. Frame position, lock and 
 | `/sskw lock` · `unlock` | Lock (click-through) or unlock the frame (same as clicking the padlock) |
 | `/sskw reset` | Move the frame back to its default position |
 | `/sskw title` | Show or hide the title |
+| `/sskw minimap` | Show or hide the minimap button |
 | `/sskw grow up` · `down` | Which way the frame extends as it grows |
 | `/sskw layout stacked` · `side` · `flipped` | Weapons above, left of, or right of Professions |
 | `/sskw weapon <redPct> <greenPts>` | Weapon thresholds (default `75 5`) |

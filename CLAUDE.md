@@ -6,7 +6,9 @@ The README describes every feature as the player sees it; read it first.
 
 ## Layout
 
-- `SimpleSkillWatch.toc`: addon manifest (version, SavedVariables)
+- `SimpleSkillWatch.toc`: addon manifest (version, SavedVariables, `IconTexture`)
+- `icon.tga`: the addon's icon (AddOns list, minimap button): 64x64, 32-bit,
+  uncompressed, made from the 512x512 CurseForge icon
 - `SimpleSkillWatch.lua`: everything except the settings window: defaults, profiles,
   skill scan, coloring, disarm detection, the frame, events, slash commands
 - `CastLog.lua`: the `/sskw castlog` diagnostic (events and lookups around crafting and
@@ -104,7 +106,8 @@ by pulling and typing `/reload` in game, so a change isn't testable until it's p
 
 - `SimpleSkillWatchDB` (account): `profiles[name]` holds every setting plus `ignored`
   skills; also the settings window position and tab, and the last cast log (`castlog`).
-- `SimpleSkillWatchCharDB` (character): `profile`, `pos`, `locked`, `known` skills.
+- `SimpleSkillWatchCharDB` (character): `profile`, `pos`, `locked`, `known` skills,
+  `minimapAngle` (the minimap button's place, in degrees).
 - New characters get a profile named after their class, copied from `Default` if it
   exists. Any change to the saved layout needs a migration on load for older data, and a
   test for it.

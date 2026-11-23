@@ -620,6 +620,10 @@ local function BuildFramePage(cfg, D)
     Check(p, "Lock frame (click-through)", x, y,
         function() return ns.IsLocked() end,
         function(v) ns.SetLocked(v) end)
+    y = y - 22
+    Check(p, "Show minimap button", x, y,
+        function() return cfg.minimapButton end,
+        function(v) cfg.minimapButton = v; Changed() end)
     y = y - 32
 
     -- Grow direction: two mutually exclusive radio buttons

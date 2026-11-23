@@ -1,8 +1,8 @@
--- SimpleSkillWatch v1.0.4 for World of Warcraft: Forever (interface 16001)
+-- SimpleSkillWatch v1.0.5 for World of Warcraft: Forever (interface 16001)
 -- Shows weapon/defense and profession skills as colored bars in a movable frame.
 
 local ADDON, ns = ...
-ns.VERSION = "1.0.4"
+ns.VERSION = "1.0.5"
 ns.NAME = "SimpleSkillWatch"
 
 ---------------------------------------------------------------------------
@@ -108,6 +108,7 @@ local DEFAULTS = {
     growUp         = false, -- false: new rows extend the frame downward; true: upward
     layout         = "stacked", -- "stacked", "side" (weapons left), "flipped" (professions left)
     shown          = true,
+    minimapButton  = true, -- button on the minimap's edge (its place is kept per character)
 }
 ns.DEFAULTS = DEFAULTS
 
@@ -1171,6 +1172,7 @@ local function ApplyFrameSettings()
     frame:EnableMouse(not locked)
     UpdateLockButton(locked)
     if locked and GameTooltip:IsOwned(frame) then GameTooltip:Hide() end
+    if ns.ApplyMinimapButton then ns.ApplyMinimapButton() end
 end
 ns.ApplyFrameSettings = ApplyFrameSettings
 
@@ -1592,6 +1594,103 @@ local function FontInfo()
 end
 
 ---------------------------------------------------------------------------
+-- Minimap button: left-click opens the settings, right-click shows or hides
+-- the frame, dragging moves it around the minimap's edge. Whether it shows
+-- is a profile setting; its place is kept per character, like the frame's.
+---------------------------------------------------------------------------
+
+local ICON = "Interface\\AddOns\\" .. ADDON .. "\\icon"
+local MINIMAP_DEFAULT_ANGLE = 215 -- degrees, counterclockwise from the minimap's right edge
+local minimapButton
+
+local function PlaceMinimapButton()
+    local angle = math.rad(charDB.minimapAngle or MINIMAP_DEFAULT_ANGLE)
+    local radius = (Minimap:GetWidth() or 140) / 2 + 5
+    minimapButton:ClearAllPoints()
+    minimapButton:SetPoint("CENTER", Minimap, "CENTER", math.cos(angle) * radius, math.sin(angle) * radius)
+end
+
+-- Runs every frame, but only while the button is being dragged.
+local function FollowCursor()
+    local mx, my = Minimap:GetCenter()
+    local cx, cy = GetCursorPosition()
+    if not mx or not my or not cx or not cy then return end
+    local scale = Minimap:GetEffectiveScale() or 1
+    charDB.minimapAngle = math.deg(math.atan2(cy / scale - my, cx / scale - mx)) % 360
+    PlaceMinimapButton()
+end
+
+local function MinimapTooltip(self)
+    GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+    GameTooltip:SetText("SimpleSkillWatch")
+    GameTooltip:AddLine("Left-click: open or close the settings", 1, 1, 1)
+    GameTooltip:AddLine("Right-click: show or hide the frame", 1, 1, 1)
+    GameTooltip:AddLine("Drag: move this button", 1, 1, 1)
+    GameTooltip:Show()
+end
+
+local function BuildMinimapButton()
+    local b = CreateFrame("Button", "SimpleSkillWatchMinimapButton", Minimap)
+    b:SetSize(31, 31)
+    b:SetFrameStrata("MEDIUM")
+    b:SetFrameLevel(8)
+    b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    b:RegisterForDrag("LeftButton")
+    b:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
+    -- the usual minimap button look: dark disc, icon, round border on top
+    local disc = b:CreateTexture(nil, "BACKGROUND")
+    disc:SetSize(20, 20)
+    disc:SetPoint("TOPLEFT", 7, -5)
+    disc:SetTexture("Interface\\Minimap\\UI-Minimap-Background")
+    b.icon = b:CreateTexture(nil, "ARTWORK")
+    b.icon:SetSize(17, 17)
+    b.icon:SetPoint("TOPLEFT", 7, -6)
+    b.icon:SetTexture(ICON)
+    local border = b:CreateTexture(nil, "OVERLAY")
+    border:SetSize(53, 53)
+    border:SetPoint("TOPLEFT")
+    border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+    b.dragging = false
+
+    b:SetScript("OnClick", function(_, button)
+        if button == "RightButton" then
+            cfg.shown = not cfg.shown
+            ApplyFrameSettings()
+            Render()
+            if ns.RefreshPanel then ns.RefreshPanel() end
+        elseif ns.TogglePanel then
+            ns.TogglePanel()
+        end
+    end)
+    b:SetScript("OnDragStart", function(self)
+        self.dragging = true
+        GameTooltip:Hide()
+        self:SetScript("OnUpdate", FollowCursor)
+    end)
+    b:SetScript("OnDragStop", function(self)
+        self.dragging = false
+        self:SetScript("OnUpdate", nil)
+    end)
+    b:SetScript("OnEnter", function(self)
+        if not self.dragging then MinimapTooltip(self) end
+    end)
+    b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    minimapButton = b
+end
+
+-- Show or hide the button to match the setting (built the first time it's wanted).
+function ns.ApplyMinimapButton()
+    if not cfg or not charDB or type(Minimap) ~= "table" then return end
+    if not cfg.minimapButton then
+        if minimapButton then minimapButton:Hide() end
+        return
+    end
+    if not minimapButton then BuildMinimapButton() end
+    PlaceMinimapButton()
+    minimapButton:Show()
+end
+
+---------------------------------------------------------------------------
 -- Refresh (coalesced)
 ---------------------------------------------------------------------------
 
@@ -1983,6 +2082,7 @@ local HELP = {
     "/sskw show | hide | toggle",
     "/sskw lock | unlock | reset",
     "/sskw title   show/hide the title",
+    "/sskw minimap   show/hide the minimap button",
     "/sskw grow up | down   which way new rows extend the frame",
     "/sskw layout stacked | side | flipped   weapons above, beside, or right of professions",
     "/sskw weapon <redPct> <greenPts>   (default 75 5)",
@@ -2063,6 +2163,9 @@ SlashCmdList.SIMPLESKILLWATCH = function(msg)
         Print("Frame grows " .. (cfg.growUp and "up" or "down") .. ".")
     elseif cmd == "title" then
         cfg.showTitle = not cfg.showTitle; Changed()
+    elseif cmd == "minimap" then
+        cfg.minimapButton = not cfg.minimapButton; Changed()
+        Print("Minimap button: " .. (cfg.minimapButton and "shown" or "hidden"))
     elseif cmd == "lock" then
         ns.SetLocked(true); Print("Frame locked and click-through.")
     elseif cmd == "unlock" then
