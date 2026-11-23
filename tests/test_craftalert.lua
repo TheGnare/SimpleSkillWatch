@@ -23,7 +23,7 @@ M.eq(last()[1], 8959, "the capped sound")
 M.cast(3276); M.cast(3276)
 M.eq(#M.sounds, 3, "each craft at the cap alerts")
 M.eq(M.chatCount(CAPPED), 3, "with its chat line")
-M.eq(M.screen[#M.screen], CAPPED, "and its line on screen")
+M.eq(M.onScreen(), CAPPED, "and its line on screen")
 
 -- A grey recipe couldn't have given a point: silent.
 M.cast(3275)

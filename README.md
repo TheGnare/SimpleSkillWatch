@@ -9,7 +9,7 @@ A small, movable frame for **World of Warcraft: Forever** that shows your weapon
 - **Skill bars** for weapons and Defense, professions (primary and secondary), and other ranked skills (Riding, Lockpicking and the like). Each bar shows `rank/max`, plus a green `(+N)` (or red `(-N)`) when gear or racials modify the skill.
 - **Weapon colors**: red below a percentage of max (default 75%), yellow in between, green within a few points of max (default 5).
 - **Profession training reminders**: the bar turns red with a **TRAIN** tag as soon as you have the skill for the next rank (Journeyman 50, Expert 125, Artisan 200; Artisan Cooking, First Aid and Fishing 225). Blue otherwise, and **gold** at the profession skill cap.
-- **Profession alerts**: a sound, a chat line and a line on screen when a skill-up leaves a profession at TRAIN, and a harsher sound when it's stuck at its trained cap (e.g. 150/150) and can't go up until you train. While it's stuck, every craft or gather that could have given a point alerts again (grey recipes and grey nodes don't). You pick both sounds from a list (the game's own, plus any that other addons share through LibSharedMedia). At TRAIN it sounds at most once every 20 seconds per profession. Never at the profession skill cap, and never for weapons or hidden skills.
+- **Profession alerts**: a sound, a chat line and a line near the top of the screen (for 6 seconds, or as long as you set) when a skill-up leaves a profession at TRAIN, and a harsher sound when it's stuck at its trained cap (e.g. 150/150) and can't go up until you train. While it's stuck, every craft or gather that could have given a point alerts again (grey recipes and grey nodes don't). You pick both sounds from a list (the game's own, plus any that other addons share through LibSharedMedia). At TRAIN it sounds at most once every 20 seconds per profession. Never at the profession skill cap, and never for weapons or hidden skills.
 - **Low weapon skill warning**: a red border (optionally pulsing) on the bar of a red weapon skill you have equipped, or on Unarmed with an empty main hand or while you're disarmed. Updates instantly on weapon swaps and disarms, including in combat.
 - **Thrown charges**: with a thrown weapon equipped, the Thrown bar shows its durability (its charges), e.g. `Thrown (154/200)`, turning bright yellow below a threshold (default 30%).
 - **Picks up new skills automatically**: learning a weapon skill, profession or rank, or gaining skill points, updates the frame right away.
@@ -43,7 +43,7 @@ Open the settings window with `/sskw`, by right-clicking the frame while it's un
 | **Frame** | Show frame, show title, lock (click-through, this character only), grow direction, layout (stacked, side by side, flipped), scale, width (per column), background and bar opacity |
 | **Text** | Font and font size |
 | **Skills** | Only show equipped weapon (plus Defense, optionally Unarmed), and checkboxes to hide or show individual skills |
-| **Alerts** | Weapon thresholds and the low weapon skill warning; thrown charges and the low-charges alert; profession training rules and skill cap; profession alerts, their two sounds, and whether the message also shows on screen |
+| **Alerts** | Weapon thresholds and the low weapon skill warning; thrown charges and the low-charges alert; profession training rules and skill cap; profession alerts, their two sounds, whether the message also shows on screen and for how long |
 | **Profile** | Switch this character's profile, save the current settings as a new profile, copy another profile into this one, or delete one |
 
 Every slider, the font and both sounds have a revert arrow that restores the default. Click a sound in its list to hear it and choose it; the list stays open so you can try several. **Defaults** (with a confirmation) resets the current profile, except the frame position and hidden skills.
@@ -77,6 +77,7 @@ A profile holds every setting plus your hidden skills. Frame position, lock and 
 | `/sskw charges` | Toggle thrown charges on the Thrown bar |
 | `/sskw lowcharges [5-80]` | Toggle the low-charges alert, or set its threshold |
 | `/sskw alerts` · `alerts test` | Toggle profession alerts, or try both of them now |
+| `/sskw alerttime <1-30>` | Seconds the alert stays on screen (default 6) |
 | `/sskw scale <0.5-2>` · `width <n>` · `fontsize <8-18>` | Size settings |
 | `/sskw bg <0-100>` · `bars <0-100>` | Background and bar opacity, in percent (default 35 and 70) |
 | `/sskw font <name>` | Pick a font by name |

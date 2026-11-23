@@ -1,8 +1,8 @@
--- SimpleSkillWatch v1.0.3 for World of Warcraft: Forever (interface 16001)
+-- SimpleSkillWatch v1.0.4 for World of Warcraft: Forever (interface 16001)
 -- Shows weapon/defense and profession skills as colored bars in a movable frame.
 
 local ADDON, ns = ...
-ns.VERSION = "1.0.3"
+ns.VERSION = "1.0.4"
 ns.NAME = "SimpleSkillWatch"
 
 ---------------------------------------------------------------------------
@@ -94,7 +94,8 @@ local DEFAULTS = {
     profWarnPct    = 90,   -- professions (if the above is off, or rank unknown): red at this % of trained cap
     profGameCap    = 300,  -- professions: the game's real cap; never warn here, gold when reached
     profAlerts     = true, -- professions: sound + chat line when a skill-up leaves one at TRAIN or at its trained cap
-    alertOnScreen  = true, -- ...and the same line in the middle of the screen
+    alertOnScreen  = true, -- ...and the same line near the top of the screen
+    alertScreenTime = 6,   -- ...for this many seconds before it fades
     soundTrain     = "Quest failed", -- ...sound when the next rank can be trained
     soundCap       = "Raid warning", -- ...sound when the skill is stuck at its trained cap
     scale          = 1.0,
@@ -779,10 +780,42 @@ local function ProfAlertLevel(id, rank, max)
     return rank >= max and ALERT_CAP or ALERT_TRAIN
 end
 
+-- The on-screen line: our own text near the top of the screen, a little
+-- below the game's red error text, so we decide how long it stays. It holds
+-- for the chosen number of seconds, then fades out over one more. A new alert
+-- replaces the line and starts the time again. No per-frame updates: the hold
+-- and fade are one animation.
+local alertText
+
 local function ShowOnScreen(text, r, g, b)
-    local f = UIErrorsFrame
-    if not cfg.alertOnScreen or type(f) ~= "table" or type(f.AddMessage) ~= "function" then return end
-    pcall(f.AddMessage, f, text, r, g, b)
+    if not cfg.alertOnScreen then return end
+    if not alertText then
+        local f = CreateFrame("Frame", "SimpleSkillWatchAlertText", UIParent)
+        f:SetSize(900, 30)
+        f:SetPoint("TOP", UIParent, "TOP", 0, -190)
+        f:SetFrameStrata("HIGH")
+        f:EnableMouse(false)
+        f.text = f:CreateFontString(nil, "OVERLAY", GameFontNormalHuge and "GameFontNormalHuge" or "GameFontNormalLarge")
+        f.text:SetPoint("TOP")
+        f.text:SetWidth(900)
+        f.text:SetJustifyH("CENTER")
+        f.fade = f:CreateAnimationGroup()
+        if f.fade.SetToFinalAlpha then f.fade:SetToFinalAlpha(true) end -- no flash at the end of the fade
+        f.hold = f.fade:CreateAnimation("Alpha")
+        f.hold:SetFromAlpha(1)
+        f.hold:SetToAlpha(0)
+        f.hold:SetDuration(1)
+        f.fade:SetScript("OnFinished", function() f:Hide() end)
+        alertText = f
+    end
+    local f = alertText
+    f.fade:Stop()
+    f.hold:SetStartDelay(cfg.alertScreenTime or DEFAULTS.alertScreenTime)
+    f.text:SetText(text)
+    f.text:SetTextColor(r, g, b)
+    f:SetAlpha(1)
+    f:Show()
+    f.fade:Play()
 end
 
 -- Give one alert. id: the skill, for the TRAIN alert's 20 second gap (the
@@ -1963,6 +1996,7 @@ local HELP = {
     "/sskw charges   toggle thrown charges on the Thrown bar",
     "/sskw lowcharges [5-80]   toggle the low-charges alert, or set its %",
     "/sskw alerts [test]   toggle profession alerts (sound and message), or try them",
+    "/sskw alerttime <1-30>   seconds the alert stays on screen (default 6)",
     "/sskw bg <0-100> | bars <0-100>   opacity % (default 35 / 70)",
     "/sskw ignore <skill name> | unignore <skill name>",
     "/sskw profile [name]   show profiles, or switch to one",
@@ -2010,6 +2044,9 @@ SlashCmdList.SIMPLESKILLWATCH = function(msg)
     elseif cmd == "lowcharges" then
         cfg.alertLowCharges = not cfg.alertLowCharges; Changed()
         Print("Alert low charges: " .. (cfg.alertLowCharges and "on" or "off"))
+    elseif cmd == "alerttime" and n1 and n1 >= 1 and n1 <= 30 then
+        cfg.alertScreenTime = n1; Changed()
+        Print("Alerts stay on screen for " .. n1 .. " seconds.")
     elseif cmd == "alerts" and a == "test" then
         ns.TestProfAlerts()
     elseif cmd == "alerts" then

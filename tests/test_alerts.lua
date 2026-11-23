@@ -9,6 +9,7 @@ local p = SimpleSkillWatchDB.profiles.Warrior
 M.eq(p.profAlerts, true, "alerts on for an older profile")
 M.eq(p.soundTrain, "Quest failed", "default TRAIN sound")
 M.eq(p.soundCap, "Raid warning", "default capped sound")
+M.eq(p.alertScreenTime, 6, "default time on screen")
 
 local function last() return M.sounds[#M.sounds] or {} end
 
@@ -27,7 +28,13 @@ M.eq(#M.sounds, 1, "TRAIN sound played")
 M.eq(last()[1], 847, "TRAIN sound is Quest failed")
 M.eq(last()[2], "Master", "plays on the Master channel")
 M.eq(M.chatCount("Skinning is at 69: you can train the next rank."), 1, "TRAIN chat line")
-M.eq(M.screen[#M.screen], "Skinning is at 69: you can train the next rank.", "TRAIN line on screen")
+M.eq(M.onScreen(), "Skinning is at 69: you can train the next rank.", "TRAIN line on screen")
+local line = SimpleSkillWatchAlertText
+M.eq(line.hold.startDelay, 6, "stays for 6 seconds by default")
+M.eq(table.concat(line.text.textColor, ","), "1,0.82,0", "TRAIN line is yellow")
+M.eq(line.fade.playing, true, "its time is running")
+M.screenTimeUp()
+M.eq(M.onScreen(), nil, "gone when its time is up")
 
 -- More skill-ups within 20 seconds stay quiet; after that it alerts again.
 M.skillUp(393)
@@ -45,6 +52,8 @@ M.skillUp(393, 4)                    -- Skinning 75/75
 M.eq(#M.sounds, 4, "capped sound played inside the TRAIN gap")
 M.eq(last()[1], 8959, "capped sound is Raid warning")
 M.eq(M.chatCount("Skinning is stuck at 75/75 until you train the next rank."), 1, "capped chat line")
+M.eq(M.onScreen(), "Skinning is stuck at 75/75 until you train the next rank.", "capped line replaces the TRAIN one")
+M.eq(table.concat(line.text.textColor, ","), "1,0.25,0.25", "capped line is red")
 
 -- The game's real cap never alerts.
 M.skill(356).rank = 299; M.refresh()
@@ -77,10 +86,10 @@ M.skillUp(197)
 M.eq(last()[1], 8960, "sound without a SOUNDKIT name uses its number")
 NOW = NOW + 21
 ns.cfg.soundTrain = "None"
-local lines = #M.screen
+M.screenTimeUp()
 M.skillUp(197)
 M.eq(#M.sounds, 6, "None is silent")
-M.eq(#M.screen, lines + 1, "the message still shows")
+assert(M.onScreen(), "the message still shows")
 NOW = NOW + 21
 ns.cfg.soundTrain = "A SharedMedia sound that is gone"
 M.skillUp(197)
@@ -88,11 +97,22 @@ M.eq(last()[1], 847, "a missing sound falls back to the default")
 
 -- "Also show it on screen" off: chat only.
 ns.cfg.alertOnScreen = false
-lines = #M.screen
+M.screenTimeUp()
+local chatLines = #M.chat
 NOW = NOW + 21
 M.skillUp(197)
-M.eq(#M.screen, lines, "nothing on screen when that's off")
+M.eq(M.onScreen(), nil, "nothing on screen when that's off")
+M.eq(#M.chat, chatLines + 1, "the chat line still prints")
 ns.cfg.alertOnScreen = true
+
+-- How long it stays is a setting.
+M.slash("alerttime 12")
+M.eq(ns.cfg.alertScreenTime, 12, "/sskw alerttime sets the seconds")
+NOW = NOW + 21
+M.skillUp(197)
+M.eq(line.hold.startDelay, 12, "the next alert stays that long")
+M.slash("alerttime 0")
+M.eq(ns.cfg.alertScreenTime, 12, "out-of-range values are refused")
 
 -- /sskw alerts turns everything off; /sskw alerts test tries both.
 M.slash("alerts")

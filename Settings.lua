@@ -908,9 +908,16 @@ local function BuildAlertsPage(cfg, D)
     y2 = y2 - 40
     Check(p, "Also show it on screen", x2 + 20, y2,
         function() return cfg.alertOnScreen end,
-        function(v) cfg.alertOnScreen = v end,
+        function(v) cfg.alertOnScreen = v; ns.RefreshPanel() end,
         AlertsOn)
-    y2 = y2 - 30
+    y2 = y2 - 28
+    Slider(p, "Stays on screen for", x2 + 20, y2, 1, 30, 1,
+        function() return cfg.alertScreenTime end,
+        function(v) cfg.alertScreenTime = v end,
+        function(v) return v .. " sec" end,
+        function() return D.alertScreenTime end,
+        function() return cfg.profAlerts and cfg.alertOnScreen end)
+    y2 = y2 - 36
 
     pages.Alerts = p
     pageBottom.Alerts = math.min(y, y2)

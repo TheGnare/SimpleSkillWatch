@@ -47,9 +47,6 @@ SOUNDKIT = { RAID_WARNING = 8959, IG_QUEST_FAILED = 847 }
 M.sounds = {}
 function PlaySound(id, channel) M.sounds[#M.sounds + 1] = { id, channel }; return true end
 function PlaySoundFile(file, channel) M.sounds[#M.sounds + 1] = { file, channel }; return true end
--- Lines shown in the middle of the screen.
-M.screen = {}
-UIErrorsFrame = { AddMessage = function(_, m) M.screen[#M.screen + 1] = m end }
 
 C_LossOfControl = {
     GetActiveLossOfControlDataCountByUnit = function(u) return (u == "player" and LOC) and 1 or 0 end,
@@ -183,6 +180,8 @@ local function newObj(kind)
             elseif k == "EnableMouse" then self.mouse = a[1]
             elseif k == "SetScale" then self.scale = a[1]
             elseif k == "SetAlpha" then self.alphaV = a[1]
+            elseif k == "SetStartDelay" then self.startDelay = a[1]
+            elseif k == "SetTextColor" then self.textColor = { a[1], a[2], a[3] }
             elseif k == "SetEnabled" then self.enabledV = a[1]
             elseif k == "SetTexture" then self.texPath = a[1]; return true
             elseif k == "SetScript" then self.scripts[a[1]] = a[2]
@@ -331,6 +330,18 @@ function M.findByText(kind, text)
             if rawget(f, "text") == text or (type(label) == "table" and label.text == text) then return f end
         end
     end
+end
+
+-- The alert line near the top of the screen: its text while it shows, else nil.
+function M.onScreen()
+    local f = SimpleSkillWatchAlertText
+    if f and f.shown then return f.text.text end
+end
+
+-- The alert line's time runs out (its hold-and-fade animation finishes).
+function M.screenTimeUp()
+    local f = SimpleSkillWatchAlertText
+    if f then f.fade:Stop(); f.fade.scripts.OnFinished(f.fade) end
 end
 
 -- Chat lines containing this text.
