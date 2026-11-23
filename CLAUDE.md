@@ -81,6 +81,9 @@ Gnare tests in game and reports back, often with screenshots. In-game diagnostic
 1. Bump the version (three places above) and add `## X.Y.Z` to `CHANGELOG.md`.
 2. Merge to `main`.
 3. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+   Or, on github.com: Releases → Draft a new release → new tag `vX.Y.Z` on `main` →
+   Publish. That tag starts the same workflow, which fills in the release's notes and zip.
+   (Cloud sessions can push branches but not tags, so they use this route.)
 
 The Release workflow runs the tests, checks that the tag, .toc, `ns.VERSION` and
 changelog agree, then the BigWigs packager builds `SimpleSkillWatch-vX.Y.Z-forever.zip` and
