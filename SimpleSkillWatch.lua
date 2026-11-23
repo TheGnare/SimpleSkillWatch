@@ -1,8 +1,8 @@
--- SimpleSkillWatch v1.0.2 for World of Warcraft: Forever (interface 16001)
+-- SimpleSkillWatch v1.0.3 for World of Warcraft: Forever (interface 16001)
 -- Shows weapon/defense and profession skills as colored bars in a movable frame.
 
 local ADDON, ns = ...
-ns.VERSION = "1.0.2"
+ns.VERSION = "1.0.3"
 ns.NAME = "SimpleSkillWatch"
 
 ---------------------------------------------------------------------------
@@ -826,10 +826,10 @@ local function CheckProfAlerts()
     end
 end
 
--- Crafting at the trained cap gives no skill-up and the game says nothing
--- about it, so each finished craft is looked at instead: if its profession is
--- stuck at the cap and the recipe isn't grey (it could have given a point),
--- the capped alert is given again.
+-- Crafting or gathering at the trained cap gives no skill-up and the game
+-- says nothing about it, so each finished cast is looked at instead: if its
+-- profession is stuck at the cap and the recipe or node isn't grey (it could
+-- have given a point), the capped alert is given again.
 -- Seen on Forever: GetTradeSkillLineForRecipe(recipe) returns the recipe's
 -- own line, its name, and the profession (e.g. 2942, "First Aid", 129); for
 -- the spell that opens the profession window just 129, "First Aid".
@@ -851,21 +851,78 @@ local function RecipeProfession(spellID)
     return id
 end
 
--- False for anything that can't give a point: a recipe the game calls grey,
--- and spells that aren't learned recipes (opening the profession window).
-local function RecipeCanSkillUp(spellID)
+-- "yes" for a learned recipe that could give a point, "grey" for one the game
+-- calls trivial, nil for a spell that isn't a learned recipe (gathering
+-- spells, and the spell that opens a profession window).
+local function RecipeState(spellID)
     local api = C_TradeSkillUI
-    if type(api.GetRecipeInfo) ~= "function" then return false end
+    if type(api.GetRecipeInfo) ~= "function" then return nil end
     local ok, info = pcall(api.GetRecipeInfo, spellID)
-    if not ok or IsSecret(info) or type(info) ~= "table" then return false end
+    if not ok or IsSecret(info) or type(info) ~= "table" then return nil end
     local learned, difficulty = info.learned, info.relativeDifficulty
-    if IsSecret(learned) or not learned then return false end
-    if IsSecret(difficulty) or type(difficulty) ~= "number" then return true end -- unknown: assume it could
-    return difficulty ~= DIFFICULTY_TRIVIAL
+    if IsSecret(learned) or not learned then return nil end
+    if IsSecret(difficulty) or type(difficulty) ~= "number" then return "yes" end -- unknown: assume it could
+    return difficulty == DIFFICULTY_TRIVIAL and "grey" or "yes"
+end
+
+-- Gathering has no recipe, and its spell (e.g. 2368 "Herbalism") says nothing
+-- about the node. The node's tooltip does: its line naming the profession is
+-- drawn in the node's difficulty color (seen on Forever: grey 0.50/0.50/0.50,
+-- green 0.25/0.75/0.25, yellow 1/1/0). So when a gathering cast starts, the
+-- tooltip is read, and the finished cast (matched by its cast ID) alerts
+-- unless that line was grey. No tooltip, or no such line: assume it could
+-- have given a point. Only casts with a cast time count, which leaves out
+-- the instant spells that open a profession window.
+local GATHERING_IDS = { [182] = true, [186] = true, [393] = true } -- Herbalism, Mining, Skinning
+local gatherCast, gatherGrey -- the gathering cast in progress, and whether its node looked grey
+
+local function PlainText(text)
+    return (text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
+end
+
+local function NodeLooksGrey(id, name)
+    local tip = GameTooltip
+    if type(tip) ~= "table" or type(tip.IsShown) ~= "function" or not tip:IsShown() then return false end
+    -- a skinnable corpse says "Skinnable" instead of the profession's name
+    local skinnable = id == 393 and type(UNIT_SKINNABLE_LEATHER) == "string" and UNIT_SKINNABLE_LEATHER or nil
+    for i = 2, 8 do
+        local line = _G["GameTooltipTextLeft" .. i]
+        if type(line) ~= "table" or type(line.GetText) ~= "function" then break end
+        local text = line:GetText()
+        if not IsSecret(text) and type(text) == "string" then
+            text = PlainText(text)
+            if text == name or text == skinnable then
+                local r, g, b = line:GetTextColor()
+                if IsSecret(r) or IsSecret(g) or IsSecret(b)
+                    or type(r) ~= "number" or type(g) ~= "number" or type(b) ~= "number" then
+                    return false
+                end
+                return math.abs(r - 0.5) < 0.1 and math.abs(g - 0.5) < 0.1 and math.abs(b - 0.5) < 0.1
+            end
+        end
+    end
+    return false
+end
+
+-- Called when the player starts a spell that has a cast time.
+local function NoteCastStart(castID, spellID)
+    gatherCast, gatherGrey = nil, false
+    if not cfg or not cfg.profAlerts or IsSecret(castID) or IsSecret(spellID)
+        or castID == nil or type(spellID) ~= "number" then
+        return
+    end
+    local id = RecipeProfession(spellID)
+    local k = id and GATHERING_IDS[id] and charDB.known[id]
+    if not k then return end
+    gatherCast = castID
+    gatherGrey = NodeLooksGrey(id, (cache[id] and cache[id].name) or k.name)
 end
 
 -- Called for each spell the player finishes casting.
-local function CheckCraftAlert(spellID)
+local function CheckCraftAlert(castID, spellID)
+    local wasGather = gatherCast ~= nil and not IsSecret(castID) and castID == gatherCast
+    local grey = gatherGrey
+    if wasGather then gatherCast, gatherGrey = nil, false end
     if not cfg or not cfg.profAlerts or IsSecret(spellID) or type(spellID) ~= "number" then return end
     local id = RecipeProfession(spellID)
     local k = id and charDB.known[id]
@@ -873,8 +930,17 @@ local function CheckCraftAlert(spellID)
     local s = ReadSkill(C_SkillInfo.GetSkillLineInfoByID(id), id)
     local rank, max = s and s.rank, s and s.maxRank
     if type(rank) ~= "number" or type(max) ~= "number" then return end
-    if ProfAlertLevel(id, rank, max) ~= ALERT_CAP or not RecipeCanSkillUp(spellID) then return end
-    ns.ProfAlert(ALERT_CAP, s.name or k.name, rank, max, id)
+    if ProfAlertLevel(id, rank, max) ~= ALERT_CAP then return end
+    -- this very cast reached the cap: the skill-up's own alert is on its way
+    if alertSeen[id] and rank > alertSeen[id] then return end
+    local state = RecipeState(spellID)
+    local could
+    if state then
+        could = state == "yes"
+    else
+        could = wasGather and GATHERING_IDS[id] and not grey
+    end
+    if could then ns.ProfAlert(ALERT_CAP, s.name or k.name, rank, max, id) end
 end
 
 -- /sskw alerts test: both alerts, two seconds apart, with made-up numbers.
@@ -1782,6 +1848,7 @@ events:SetScript("OnEvent", function(self, event, arg1, arg2, arg3)
         eventStatus.PLAYER_EQUIPMENT_CHANGED = SafeRegister("PLAYER_EQUIPMENT_CHANGED")
         eventStatus.UPDATE_INVENTORY_DURABILITY = SafeRegister("UPDATE_INVENTORY_DURABILITY")
         eventStatus.UNIT_SPELLCAST_SUCCEEDED = SafeRegisterUnit("UNIT_SPELLCAST_SUCCEEDED")
+        eventStatus.UNIT_SPELLCAST_START = SafeRegisterUnit("UNIT_SPELLCAST_START")
         for ev, kind in pairs(DISARM_EVENTS) do
             eventStatus[ev] = (kind == "unit") and SafeRegisterUnit(ev) or SafeRegister(ev)
         end
@@ -1806,8 +1873,11 @@ events:SetScript("OnEvent", function(self, event, arg1, arg2, arg3)
         CheckDisarm()
 
     elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
-        -- (unit, cast, spell): a finished craft, for the repeat alert at the trained cap
-        if not IsSecret(arg1) and arg1 == "player" then CheckCraftAlert(arg3) end
+        -- (unit, cast, spell): a finished craft or gather, for the repeat alert at the trained cap
+        if not IsSecret(arg1) and arg1 == "player" then CheckCraftAlert(arg2, arg3) end
+
+    elseif event == "UNIT_SPELLCAST_START" then
+        if not IsSecret(arg1) and arg1 == "player" then NoteCastStart(arg2, arg3) end
 
     elseif event == "UPDATE_INVENTORY_DURABILITY" then
         -- fires on every throw: refresh only the Thrown bar, nothing else
@@ -2011,6 +2081,7 @@ SlashCmdList.SIMPLESKILLWATCH = function(msg)
         local list = { unpack(REFRESH_EVENTS) }
         list[#list + 1] = "PLAYER_EQUIPMENT_CHANGED"
         list[#list + 1] = "UPDATE_INVENTORY_DURABILITY"
+        list[#list + 1] = "UNIT_SPELLCAST_START"
         list[#list + 1] = "UNIT_SPELLCAST_SUCCEEDED"
         for _, ev in ipairs(DISARM_EVENT_ORDER) do list[#list + 1] = ev end
         for _, ev in ipairs(list) do

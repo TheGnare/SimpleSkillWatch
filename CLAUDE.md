@@ -80,7 +80,18 @@ by pulling and typing `/reload` in game, so a change isn't testable until it's p
   a yellow recipe and 3 for a grey one (0 orange and 2 green are assumed, not seen);
   `maxTrivialLevel` is the skill where it turns grey. `canSkillUp` and `numSkillUps`
   don't follow difficulty (true and 1 on a grey recipe). The window-opening spell has
-  `learned = false`. Gathering not looked at yet.
+  `learned = false`.
+- Gathering a herb fires `UNIT_SPELLCAST_SENT` (with the node's name as target), `START`,
+  `SUCCEEDED`, `STOP` for the rank's spell (2368 "Herbalism" at Journeyman), which maps
+  to the profession (`2944, "Herbalism", 182`) with no window open. That spell is not a
+  learned recipe and carries no difficulty; `GetGatheringOperationInfo` returns nil. The
+  skill-up's `CHAT_MSG_SKILL` comes right after `SUCCEEDED` (skill still old when
+  `SUCCEEDED` fires). The node's difficulty shows only in its tooltip: the line naming
+  the profession is colored grey 0.50/0.50/0.50, green 0.25/0.75/0.25, yellow 1/1/0
+  (orange not seen). Mining, skinning and fishing not looked at yet.
+- Instant spells (opening a profession window) fire `SUCCEEDED` without `START`.
+- Don't build on other addons' tooltip text: Gnare runs "Gather Skill Tooltip", which
+  rewrites a node's first line (`Silverleaf (103/1)`).
 - Register events through `SafeRegister` (checks `C_EventUtils.IsEventValid`).
 - Fonts from other addons may not be loaded at login: `SetFont` can fail or draw blank,
   and re-applying the same face is ignored, so the code switches to the default face and

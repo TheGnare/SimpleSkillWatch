@@ -105,7 +105,9 @@ RECIPES = {
     [3274] = { line = 129, name = "First Aid", info = { learned = false, relativeDifficulty = 0 } },
     [3275] = { line = 2942, name = "First Aid", parent = 129, info = { learned = true, relativeDifficulty = 3 } },
     [3276] = { line = 2942, name = "First Aid", parent = 129, info = { learned = true, relativeDifficulty = 1 } },
-    [8613] = { line = 2564, name = "Skinning", parent = 393, info = { learned = true, relativeDifficulty = 2 } },
+    -- gathering spells aren't learned recipes and carry no difficulty
+    [2368] = { line = 2944, name = "Herbalism", parent = 182, info = { learned = false, relativeDifficulty = 0 } },
+    [8613] = { line = 2564, name = "Skinning", parent = 393, info = { learned = false, relativeDifficulty = 0 } },
 }
 C_TradeSkillUI = {
     GetTradeSkillLineForRecipe = function(id)
@@ -116,9 +118,34 @@ C_TradeSkillUI = {
 }
 
 -- The player finishes casting a spell (a craft, or anything else).
-function M.cast(spellID)
-    M.event("UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-3-1", spellID)
+-- castID: defaults to a new one per call.
+local castCount = 0
+function M.cast(spellID, castID)
+    castCount = castCount + 1
+    M.event("UNIT_SPELLCAST_SUCCEEDED", "player", castID or ("Cast-3-" .. castCount), spellID)
     M.runTimers()
+end
+
+-- What the game tooltip shows: a list of { text, r, g, b } lines, or nil for
+-- no tooltip.
+function M.tooltip(lines)
+    GameTooltip.shown = lines ~= nil
+    for i = 1, 8 do
+        local l = lines and lines[i]
+        _G["GameTooltipTextLeft" .. i] = l and {
+            GetText = function() return l[1] end,
+            GetTextColor = function() return l[2], l[3], l[4] end,
+        } or nil
+    end
+end
+
+-- The player gathers from a node: the cast starts (with the tooltip as it is
+-- now) and finishes.
+function M.gather(spellID)
+    castCount = castCount + 1
+    local castID = "Cast-3-" .. castCount
+    M.event("UNIT_SPELLCAST_START", "player", castID, spellID)
+    M.cast(spellID, castID)
 end
 
 -- Add a weapon skill right after the "Weapon Skills" header.
@@ -196,6 +223,7 @@ end
 
 UIParent = newObj("Frame")
 GameTooltip = newObj("GameTooltip")
+GameTooltip.shown = false
 GameFontHighlightSmall = newObj("Font")
 GameFontHighlight = newObj("Font")
 UISpecialFrames = {}
