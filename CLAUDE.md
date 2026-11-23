@@ -91,20 +91,29 @@ by pulling and typing `/reload` in game, so a change isn't testable until it's p
   happens, no jargon.
 - Credit is "Gnare" (shown in `#4D5FFF` in the settings window).
 - Every player-visible change gets a `CHANGELOG.md` line under `## Unreleased` at the
-  top (create the heading if missing); don't bump the version for each change. Merge
+  top (create the heading if missing). Merge
   lines when later work changes or reverts something from the same unreleased batch, so
   the notes describe the end result, not the iterations. Update the README when a
   feature or command changes.
 - Versions are major.minor.patch. A version lives in three places that must match:
   `## Version:` in the .toc, the header comment and `ns.VERSION` in
   `SimpleSkillWatch.lua`.
+- **Bump the patch number on every push Gnare will test** (1.0.0 → 1.0.1 → 1.0.2 …),
+  even for a one-line fix, so the login message in game proves which build loaded.
+  Say the new number in your reply. Test builds don't get their own changelog
+  headings: their lines stay under `## Unreleased`.
+- Before bumping, check the version on `main` (it may have moved since your session
+  started) and go one past the higher of the two, so two sessions never ship
+  the same number.
 
 ## Releasing
 
 Pushing to `main` publishes nothing; only a version tag does.
 
-1. Bump the version (three places above) and rename `## Unreleased` in `CHANGELOG.md`
-   to `## X.Y.Z`.
+1. Gnare picks the release number. Either keep the last test build's number (e.g.
+   1.0.7), or collect the batch into the next minor or major version (e.g. 1.1.0); set
+   it in the three places if it changed. Rename `## Unreleased` in `CHANGELOG.md` to
+   `## X.Y.Z`. Skipped patch numbers are fine.
 2. Merge to `main`.
 3. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
    Or, on github.com: Releases → Draft a new release → new tag `vX.Y.Z` on `main` →
