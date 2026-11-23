@@ -70,15 +70,21 @@ Gnare tests in game and reports back, often with screenshots. In-game diagnostic
 - Player-facing text (chat, tooltips, settings, README) is short and plain: say what
   happens, no jargon.
 - Credit is "Gnare" (shown in `#4D5FFF` in the settings window).
-- Every change gets a `CHANGELOG.md` entry under a new version heading, and the README
-  is updated when a feature or command changes.
+- Every player-visible change gets a `CHANGELOG.md` line under `## Unreleased` at the
+  top (create the heading if missing); don't bump the version for each change. Merge
+  lines when later work changes or reverts something from the same unreleased batch, so
+  the notes describe the end result, not the iterations. Update the README when a
+  feature or command changes.
 - Versions are major.minor.patch. A version lives in three places that must match:
   `## Version:` in the .toc, the header comment and `ns.VERSION` in
   `SimpleSkillWatch.lua`.
 
 ## Releasing
 
-1. Bump the version (three places above) and add `## X.Y.Z` to `CHANGELOG.md`.
+Pushing to `main` publishes nothing; only a version tag does.
+
+1. Bump the version (three places above) and rename `## Unreleased` in `CHANGELOG.md`
+   to `## X.Y.Z`.
 2. Merge to `main`.
 3. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
    Or, on github.com: Releases → Draft a new release → new tag `vX.Y.Z` on `main` →
