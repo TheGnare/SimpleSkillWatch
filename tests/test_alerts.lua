@@ -8,7 +8,7 @@ M.login()
 local p = SimpleSkillWatchDB.profiles.Warrior
 M.eq(p.profAlerts, true, "alerts on for an older profile")
 M.eq(p.soundTrain, "Quest failed", "default TRAIN sound")
-M.eq(p.soundCap, "Raid warning", "default capped sound")
+M.eq(p.soundCap, "Alarm clock 1", "default capped sound")
 M.eq(p.alertScreenTime, 6, "default time on screen")
 
 local function last() return M.sounds[#M.sounds] or {} end
@@ -50,7 +50,7 @@ M.eq(#M.sounds, 3, "another profession isn't held back")
 -- Reaching the trained cap: the harsher sound, right away.
 M.skillUp(393, 4)                    -- Skinning 75/75
 M.eq(#M.sounds, 4, "capped sound played inside the TRAIN gap")
-M.eq(last()[1], 8959, "capped sound is Raid warning")
+M.eq(last()[1], 12867, "capped sound is Alarm clock 1")
 M.eq(M.chatCount("Skinning is stuck at 75/75 until you train the next rank."), 1, "capped chat line")
 M.eq(M.onScreen(), "Skinning is stuck at 75/75 until you train the next rank.", "capped line replaces the TRAIN one")
 M.eq(table.concat(line.text.textColor, ","), "1,0.25,0.25", "capped line is red")
@@ -126,31 +126,51 @@ ns.cfg.soundTrain = "Quest failed"
 M.slash("alerts test")               -- M.slash runs the 2 s timer too
 M.eq(#M.sounds, before + 2, "test plays both sounds")
 M.eq(M.sounds[#M.sounds - 1][1], 847, "test: TRAIN first")
-M.eq(last()[1], 8959, "test: then capped")
+M.eq(last()[1], 12867, "test: then capped")
 
--- SharedMedia sounds are listed after the built-in ones and play as files.
+-- The sound list: None, then the game's sounds under a heading, alphabetical.
+local function listed()
+    local names = {}
+    for _, s in ipairs(ns.GetSounds()) do names[#names + 1] = s.name or ("[" .. s.header .. "]") end
+    return table.concat(names, ",")
+end
+local GAME = "None,[Game sounds],Alarm clock 1,Alarm clock 2,Boss warning,Invite declined,Map ping,"
+    .. "PvP queue,Quest failed,Raid warning,Ready check,Whisper"
+M.eq(listed(), GAME, "game sounds alphabetical under their heading; no second heading without other sounds")
+
+-- SharedMedia sounds follow under their own heading, alphabetical whatever
+-- their case, without a second None; they play as files.
 LibStub = function() return {
-    List = function() return { "Zap", "None", "Air Horn" } end,
+    List = function() return { "Zap", "None", "popup", "Air Horn" } end,
     Fetch = function(_, _, name) return "Interface\\AddOns\\Media\\" .. name .. ".ogg" end,
 } end
-local names = {}
-for _, s in ipairs(ns.GetSounds()) do names[#names + 1] = s.name end
-M.eq(names[1], "None", "None first")
-M.eq(names[2], "Raid warning", "built-in sounds next")
-M.eq(names[#names - 1] .. "," .. names[#names], "Air Horn,Zap", "SharedMedia sounds last, sorted, no second None")
+M.eq(listed(), GAME .. ",[From other addons],Air Horn,popup,Zap", "other addons' sounds under their own heading")
 ns.PlayAlertSound("Zap")
 M.eq(last()[1], "Interface\\AddOns\\Media\\Zap.ogg", "SharedMedia sound plays its file")
+before = #M.sounds
+M.eq(ns.PlayAlertSound(nil), false, "a heading is never mistaken for a sound")
+M.eq(#M.sounds, before, "and nothing plays")
 LibStub = nil
 
 -- Settings window: the pickers show the chosen sounds; clicking a row in the
 -- list plays it and chooses it; the list stays open.
 M.slash("")
 local trainBtn = M.findByText("Button", "Quest failed")
-local capBtn = M.findByText("Button", "Raid warning")
+local capBtn = M.findByText("Button", "Alarm clock 1")
 assert(trainBtn and capBtn, "both sound pickers show their sound")
 capBtn.scripts.OnClick(capBtn)
 local list = SimpleSkillWatchSoundList
 M.eq(list.shown, true, "sound list opens")
+-- the heading row is dimmed and can't be clicked or chosen
+local heading = list.buttons[2]
+M.eq(heading.text.text, "Game sounds", "heading row in the list")
+M.eq(heading.mouse, false, "heading takes no clicks")
+M.eq(heading.rule.shown, true, "heading has its line")
+M.eq(heading.check.shown, false, "heading is never ticked")
+heading.scripts.OnClick(heading)
+M.eq(ns.cfg.soundCap, "Alarm clock 1", "clicking a heading changes nothing")
+M.eq(list.buttons[3].mouse, true, "sound rows take clicks")
+M.eq(list.buttons[3].rule.shown, false, "sound rows have no line")
 local row
 for _, b in ipairs(list.buttons) do
     if b.shown and b.text.text == "Ready check" then row = b end
@@ -187,4 +207,4 @@ M.eq(speaker.enabledV, true, "and usable again")
 
 -- Defaults puts both sounds back.
 ns.ResetDefaults()
-M.eq(ns.cfg.soundCap, "Raid warning", "Defaults restores the capped sound")
+M.eq(ns.cfg.soundCap, "Alarm clock 1", "Defaults restores the capped sound")

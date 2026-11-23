@@ -1,8 +1,8 @@
--- SimpleSkillWatch v1.0.7 for World of Warcraft: Forever (interface 16001)
+-- SimpleSkillWatch v1.0.8 for World of Warcraft: Forever (interface 16001)
 -- Shows weapon/defense and profession skills as colored bars in a movable frame.
 
 local ADDON, ns = ...
-ns.VERSION = "1.0.7"
+ns.VERSION = "1.0.8"
 ns.NAME = "SimpleSkillWatch"
 
 ---------------------------------------------------------------------------
@@ -97,7 +97,7 @@ local DEFAULTS = {
     alertOnScreen  = true, -- ...and the same line near the top of the screen
     alertScreenTime = 6,   -- ...for this many seconds before it fades
     soundTrain     = "Quest failed", -- ...sound when the next rank can be trained
-    soundCap       = "Raid warning", -- ...sound when the skill is stuck at its trained cap
+    soundCap       = "Alarm clock 1", -- ...sound when the skill is stuck at its trained cap
     scale          = 1.0,
     width          = 230,  -- frame width; never below ns.MinWidth()
     bgAlpha        = 35,   -- frame background + border opacity, 0-100
@@ -122,7 +122,7 @@ local BUILTIN_FONTS = {
 }
 
 -- Alert sounds: the game's own, by SOUNDKIT name (id is that sound's usual
--- number, used if the client doesn't have the name). Harsher ones first.
+-- number, used if the client doesn't have the name). All ten play on Forever.
 -- Sounds registered with LibSharedMedia by other addons are added to the list.
 local BUILTIN_SOUNDS = {
     { name = "Raid warning",    kit = "RAID_WARNING",             id = 8959 },
@@ -194,6 +194,13 @@ local function CopyDefaults(dst, src)
     for k, v in pairs(src) do
         if dst[k] == nil then dst[k] = v end
     end
+end
+
+-- Alphabetical regardless of case ("popup" sorts with the Ps, not after "Zap").
+local function ByName(a, b)
+    local la, lb = a.name:lower(), b.name:lower()
+    if la ~= lb then return la < lb end
+    return a.name < b.name
 end
 
 local function DeepCopy(t)
@@ -336,7 +343,7 @@ function ns.GetFonts()
                 extra[#extra + 1] = { name = n, path = p }
             end
         end
-        table.sort(extra, function(a, b) return a.name < b.name end)
+        table.sort(extra, ByName)
         for _, f in ipairs(extra) do list[#list + 1] = f end
     end
     return list
@@ -346,14 +353,21 @@ end
 -- Sounds
 ---------------------------------------------------------------------------
 
--- { name, kit, id } or { name, file } list: "None" first, then the built-in
--- sounds, then any SharedMedia ones.
+-- The sound list as the picker shows it: "None", then a heading and the
+-- game's own sounds, then (if there are any) a heading and the sounds other
+-- addons share through SharedMedia. Each group is alphabetical.
+-- Entries: { name, kit, id }, { name, file }, or { header = text } for a heading.
 function ns.GetSounds()
     local list, seen = { { name = "None" } }, { none = true }
+    local builtin = {}
     for _, snd in ipairs(BUILTIN_SOUNDS) do
-        list[#list + 1] = snd
+        builtin[#builtin + 1] = snd
         seen[snd.name:lower()] = true
     end
+    table.sort(builtin, ByName)
+    list[#list + 1] = { header = "Game sounds" }
+    for _, snd in ipairs(builtin) do list[#list + 1] = snd end
+
     local ok, LSM = pcall(function() return LibStub and LibStub("LibSharedMedia-3.0", true) end)
     if ok and LSM and LSM.List and LSM.Fetch then
         local extra = {}
@@ -365,7 +379,8 @@ function ns.GetSounds()
                 extra[#extra + 1] = { name = n, file = file }
             end
         end
-        table.sort(extra, function(a, b) return a.name < b.name end)
+        table.sort(extra, ByName)
+        if #extra > 0 then list[#list + 1] = { header = "From other addons" } end
         for _, snd in ipairs(extra) do list[#list + 1] = snd end
     end
     return list
@@ -378,8 +393,10 @@ end
 function ns.PlayAlertSound(name, fallback)
     local entry, spare
     for _, snd in ipairs(ns.GetSounds()) do
-        if snd.name == name then entry = snd end
-        if snd.name == fallback then spare = snd end
+        if snd.name then -- headings have none
+            if snd.name == name then entry = snd end
+            if snd.name == fallback then spare = snd end
+        end
     end
     entry = entry or spare
     if not entry then return false end

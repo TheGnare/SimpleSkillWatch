@@ -22,7 +22,7 @@ M.gather(HERB)
 M.eq(#M.sounds, 0, "the cast that reaches the cap doesn't alert by itself")
 M.refresh()                           -- ...and is seen on the rescan
 M.eq(#M.sounds, 1, "one alert on reaching the cap")
-M.eq(M.sounds[1][1], 8959, "the capped sound")
+M.eq(M.sounds[1][1], 12867, "the capped sound")
 
 -- At the cap: yellow and green nodes alert, a grey one doesn't.
 M.gather(HERB)

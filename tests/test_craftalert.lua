@@ -17,7 +17,7 @@ M.cast(3276)
 M.eq(#M.sounds, 0, "still below the cap when the cast finishes")
 M.skillUp(129)                        -- 225/225
 M.eq(#M.sounds, 1, "one alert on reaching the cap")
-M.eq(last()[1], 8959, "the capped sound")
+M.eq(last()[1], 12867, "the capped sound")
 
 -- Every further craft of a recipe that isn't grey alerts again, with no gap.
 M.cast(3276); M.cast(3276)

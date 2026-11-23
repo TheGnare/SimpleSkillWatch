@@ -4,7 +4,8 @@ All notable changes to SimpleSkillWatch. Versions follow major.minor.patch.
 
 ## Unreleased
 - **Profession alerts**: a sound, a chat line and a line near the top of the screen when a skill-up leaves a profession at TRAIN (at most once every 20 seconds per profession), and a harsher sound when it's stuck at its trained cap. While it's stuck, every craft or gather that could have given a point alerts again (grey recipes and grey nodes don't). Never at the profession skill cap, and never for weapons or hidden skills. On by default; turn it off on the Alerts tab or with `/sskw alerts`. `/sskw alerts test` tries both. The on-screen line stays for 6 seconds, then fades; change that on the Alerts tab or with `/sskw alerttime <1-30>`.
-- Both alert sounds are picked from a list on the Alerts tab: ten of the game's own sounds, plus any shared by other addons through LibSharedMedia. Click one to hear it and choose it, or click the speaker beside a picker to hear the one that's chosen. They play even with sound effects turned off.
+- Both alert sounds are picked from a list on the Alerts tab: ten of the game's own sounds, then any shared by other addons through LibSharedMedia, each group under its own heading and in alphabetical order. Click one to hear it and choose it, or click the speaker beside a picker to hear the one that's chosen. They play even with sound effects turned off.
+- The font list is alphabetical regardless of upper or lower case.
 - Alerts tab: thrown weapon settings moved to the left column, under the weapon settings.
 - **Minimap button**: left-click opens the settings, right-click shows or hides the frame, drag it around the minimap's edge, round or square (each character keeps its own spot). On by default; turn it off on the Frame tab or with `/sskw minimap`.
 - SimpleSkillWatch now has its icon in the game's AddOns list.

@@ -43,7 +43,7 @@ function UnitDefenseSkill() return 37, 0 end
 -- exist here, so both the by-name and the by-number lookups get exercised.
 NOW = 1000        -- GetTime(); tests move it forward
 function GetTime() return NOW end
-SOUNDKIT = { RAID_WARNING = 8959, IG_QUEST_FAILED = 847 }
+SOUNDKIT = { ALARM_CLOCK_WARNING_2 = 12867, IG_QUEST_FAILED = 847 }
 M.sounds = {}
 function PlaySound(id, channel) M.sounds[#M.sounds + 1] = { id, channel }; return true end
 function PlaySoundFile(file, channel) M.sounds[#M.sounds + 1] = { file, channel }; return true end

@@ -413,6 +413,7 @@ end
 -- Sound list: one list shared by the sound pickers on the Alerts tab.
 -- Clicking a row plays the sound and chooses it; the list stays open so
 -- several can be tried in a row (the picker button or Esc closes it).
+-- Headings ("Game sounds", "From other addons") are rows too.
 ---------------------------------------------------------------------------
 
 local SOUND_ROWS, SOUND_ROW_H = 12, 18
@@ -428,9 +429,22 @@ local function UpdateSoundList()
     for i, b in ipairs(soundList.buttons) do
         local snd = sounds[i + soundList.offset]
         if snd then
-            b.soundName = snd.name
-            b.text:SetText(snd.name)
-            b.check:SetShown(snd.name == current)
+            -- a heading is dimmed, has a thin line above it, and can't be clicked
+            local heading = snd.header ~= nil
+            b.isHeading = heading
+            b.soundName = snd.name or ""
+            b.text:SetText(snd.header or snd.name)
+            if heading then
+                b.text:SetTextColor(0.6, 0.6, 0.6)
+            else
+                b.text:SetTextColor(1, 1, 1)
+            end
+            b.text:ClearAllPoints()
+            b.text:SetPoint("LEFT", heading and 4 or 20, 0)
+            b.text:SetPoint("RIGHT", -2, 0)
+            b.rule:SetShown(heading)
+            b.check:SetShown(not heading and snd.name == current)
+            b:EnableMouse(not heading)
             b:Show()
         else
             b:Hide()
@@ -483,6 +497,13 @@ local function BuildSoundList()
         b:SetPoint("TOPLEFT", 6, -6 - (i - 1) * SOUND_ROW_H)
         b:SetPoint("RIGHT", -20, 0)
         b.soundName = ""
+        b.isHeading = false
+        b.rule = b:CreateTexture(nil, "ARTWORK")
+        b.rule:SetHeight(1)
+        b.rule:SetPoint("TOPLEFT", 2, 0)
+        b.rule:SetPoint("TOPRIGHT", -2, 0)
+        b.rule:SetColorTexture(0.5, 0.5, 0.5, 0.6)
+        b.rule:Hide()
         b.check = b:CreateTexture(nil, "ARTWORK")
         b.check:SetSize(14, 14)
         b.check:SetPoint("LEFT", 2, 0)
@@ -493,7 +514,9 @@ local function BuildSoundList()
         b.text:SetJustifyH("LEFT")
         b.text:SetWordWrap(false)
         b:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
-        b:SetScript("OnClick", function(self) ChooseSound(soundList.key, self.soundName) end)
+        b:SetScript("OnClick", function(self)
+            if not self.isHeading then ChooseSound(soundList.key, self.soundName) end
+        end)
         soundList.buttons[i] = b
     end
 
