@@ -2,6 +2,12 @@
 
 All notable changes to SimpleSkillWatch. Versions follow major.minor.patch.
 
+## Unreleased
+- **Profession alerts**: a sound, a chat line and a line on screen when a skill-up leaves a profession at TRAIN (at most once every 20 seconds per profession), and a harsher sound when it's stuck at its trained cap. Never at the profession skill cap, and never for weapons or hidden skills. On by default; turn it off on the Alerts tab or with `/sskw alerts`. `/sskw alerts test` tries both.
+- Both alert sounds are picked from a list on the Alerts tab: ten of the game's own sounds, plus any shared by other addons through LibSharedMedia. Click one to hear it and choose it. They play even with sound effects turned off.
+- Alerts tab: thrown weapon settings moved to the left column, under the weapon settings.
+- `/sskw castlog` (diagnostic): records what the game reports while you craft or gather. `/sskw castlog copy` opens the record in a window to copy from.
+
 ## 1.0.0
 - First public release, on GitHub and CurseForge. Same features as 0.14.0.
 

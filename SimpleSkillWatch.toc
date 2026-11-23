@@ -9,4 +9,5 @@
 ## X-Curse-Project-ID: 1825141
 
 SimpleSkillWatch.lua
+CastLog.lua
 Settings.lua

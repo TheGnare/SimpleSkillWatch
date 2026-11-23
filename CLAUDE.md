@@ -9,6 +9,8 @@ The README describes every feature as the player sees it; read it first.
 - `SimpleSkillWatch.toc`: addon manifest (version, SavedVariables)
 - `SimpleSkillWatch.lua`: everything except the settings window: defaults, profiles,
   skill scan, coloring, disarm detection, the frame, events, slash commands
+- `CastLog.lua`: the `/sskw castlog` diagnostic (events and lookups around crafting and
+  gathering). Loaded between the other two; uses `ns` helpers from the main file.
 - `Settings.lua`: the settings window (tabs Frame / Text / Skills / Alerts / Profile)
   and the Options → AddOns entry. Shares the addon namespace `ns` with the main file.
 - `tests/`: a mock of the WoW API (`wowmock.lua`) and `test_*.lua` files
@@ -31,7 +33,9 @@ methods are no-ops that return nil. Two traps from that:
 - Passing tests don't prove it works in game. Say what still needs an in-game check.
 
 Gnare tests in game and reports back, often with screenshots. In-game diagnostics:
-`/sskw events`, `/sskw disarmlog`, `/sskw debug`, `/sskw fontinfo`.
+`/sskw events`, `/sskw disarmlog`, `/sskw debug`, `/sskw fontinfo`, `/sskw castlog`
+(its lines are kept in `SimpleSkillWatchDB.castlog`; `/sskw castlog copy` shows them in
+a window he can copy from and paste back).
 
 ### How Gnare gets your changes
 
@@ -75,7 +79,7 @@ by pulling and typing `/reload` in game, so a change isn't testable until it's p
 ## Saved data
 
 - `SimpleSkillWatchDB` (account): `profiles[name]` holds every setting plus `ignored`
-  skills; also the settings window position and tab.
+  skills; also the settings window position and tab, and the last cast log (`castlog`).
 - `SimpleSkillWatchCharDB` (character): `profile`, `pos`, `locked`, `known` skills.
 - New characters get a profile named after their class, copied from `Default` if it
   exists. Any change to the saved layout needs a migration on load for older data, and a

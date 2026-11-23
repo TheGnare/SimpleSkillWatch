@@ -39,6 +39,18 @@ function UnitClass() return PLAYER_CLASS, string.upper(PLAYER_CLASS) end
 function UnitLevel() return 12 end
 function UnitDefenseSkill() return 37, 0 end
 
+-- Sounds the addon played: { id or file, channel }. Only two SOUNDKIT names
+-- exist here, so both the by-name and the by-number lookups get exercised.
+NOW = 1000        -- GetTime(); tests move it forward
+function GetTime() return NOW end
+SOUNDKIT = { RAID_WARNING = 8959, IG_QUEST_FAILED = 847 }
+M.sounds = {}
+function PlaySound(id, channel) M.sounds[#M.sounds + 1] = { id, channel }; return true end
+function PlaySoundFile(file, channel) M.sounds[#M.sounds + 1] = { file, channel }; return true end
+-- Lines shown in the middle of the screen.
+M.screen = {}
+UIErrorsFrame = { AddMessage = function(_, m) M.screen[#M.screen + 1] = m end }
+
 C_LossOfControl = {
     GetActiveLossOfControlDataCountByUnit = function(u) return (u == "player" and LOC) and 1 or 0 end,
     GetActiveLossOfControlDataByUnit = function() return LOC end,
@@ -78,6 +90,13 @@ C_SkillInfo = {
     GetSkillLineInfo = function(i) return LINES[i] end,
     GetSkillLineInfoByID = function(id) return byID[id] end,
 }
+
+-- Raise a skill by n points (default 1) and let the addon see it.
+function M.skillUp(id, n)
+    byID[id].rank = byID[id].rank + (n or 1)
+    M.event("CHAT_MSG_SKILL", "skill up")
+    M.runTimers()
+end
 
 -- Add a weapon skill right after the "Weapon Skills" header.
 function M.addSkill(id, name, rank, maxRank)
@@ -189,7 +208,7 @@ end
 
 function M.load(addonDir)
     local ns = {}
-    for _, file in ipairs({ "SimpleSkillWatch.lua", "Settings.lua" }) do
+    for _, file in ipairs({ "SimpleSkillWatch.lua", "CastLog.lua", "Settings.lua" }) do
         assert(loadfile(addonDir .. "/" .. file))("SimpleSkillWatch", ns)
     end
     for _, f in ipairs(frames) do if f.events.ADDON_LOADED then eventFrame = f end end
@@ -252,6 +271,25 @@ function M.barNames(only)
 end
 
 function M.mainFrame() return SimpleSkillWatchFrame end
+
+-- First frame of a kind whose text (or label text) is exactly this.
+function M.findByText(kind, text)
+    for _, f in ipairs(frames) do
+        if f.kind == kind then
+            local label = rawget(f, "label") or rawget(f, "text")
+            if rawget(f, "text") == text or (type(label) == "table" and label.text == text) then return f end
+        end
+    end
+end
+
+-- Chat lines containing this text.
+function M.chatCount(text)
+    local n = 0
+    for _, line in ipairs(M.chat) do
+        if line:find(text, 1, true) then n = n + 1 end
+    end
+    return n
+end
 
 -- The padlock button (the only Button that tracks a dimmed state).
 function M.lockButton()

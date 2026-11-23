@@ -389,6 +389,149 @@ local function ToggleFontList(owner)
 end
 
 ---------------------------------------------------------------------------
+-- Sound list: one list shared by the sound pickers on the Alerts tab.
+-- Clicking a row plays the sound and chooses it; the list stays open so
+-- several can be tried in a row (the picker button or Esc closes it).
+---------------------------------------------------------------------------
+
+local SOUND_ROWS, SOUND_ROW_H = 12, 18
+local soundList
+
+local function UpdateSoundList()
+    local sounds = soundList.sounds
+    local maxOffset = math.max(0, #sounds - SOUND_ROWS)
+    if soundList.offset > maxOffset then soundList.offset = maxOffset end
+    if soundList.offset < 0 then soundList.offset = 0 end
+    local current = ns.cfg[soundList.key]
+
+    for i, b in ipairs(soundList.buttons) do
+        local snd = sounds[i + soundList.offset]
+        if snd then
+            b.soundName = snd.name
+            b.text:SetText(snd.name)
+            b.check:SetShown(snd.name == current)
+            b:Show()
+        else
+            b:Hide()
+        end
+    end
+
+    local bar = soundList.scrollBar
+    if maxOffset > 0 then
+        soundList.updatingBar = true
+        bar:SetMinMaxValues(0, maxOffset)
+        bar:SetValue(soundList.offset)
+        soundList.updatingBar = false
+        bar:Show()
+    else
+        bar:Hide()
+    end
+end
+
+local function ChooseSound(key, name)
+    ns.cfg[key] = name
+    ns.PlayAlertSound(name)
+    ns.RefreshPanel()
+    if soundList and soundList:IsShown() then UpdateSoundList() end
+end
+
+local function BuildSoundList()
+    soundList = CreateFrame("Frame", "SimpleSkillWatchSoundList", panel, "BackdropTemplate")
+    soundList:SetFrameStrata("FULLSCREEN_DIALOG")
+    soundList:SetToplevel(true)
+    soundList:SetClampedToScreen(true)
+    soundList:SetBackdrop({
+        bgFile   = "Interface\\Tooltips\\UI-Tooltip-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true, tileSize = 16, edgeSize = 12,
+        insets = { left = 3, right = 3, top = 3, bottom = 3 },
+    })
+    soundList:SetBackdropColor(0.05, 0.05, 0.05, 0.97)
+    soundList:SetBackdropBorderColor(0.7, 0.7, 0.7, 1)
+    soundList:EnableMouse(true)
+    soundList:EnableMouseWheel(true)
+    soundList.key = ""
+    soundList.offset = 0
+    soundList.updatingBar = false
+    soundList.sounds = {}
+    soundList.buttons = {}
+
+    for i = 1, SOUND_ROWS do
+        local b = CreateFrame("Button", nil, soundList)
+        b:SetHeight(SOUND_ROW_H)
+        b:SetPoint("TOPLEFT", 6, -6 - (i - 1) * SOUND_ROW_H)
+        b:SetPoint("RIGHT", -20, 0)
+        b.soundName = ""
+        b.check = b:CreateTexture(nil, "ARTWORK")
+        b.check:SetSize(14, 14)
+        b.check:SetPoint("LEFT", 2, 0)
+        b.check:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
+        b.text = b:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        b.text:SetPoint("LEFT", 20, 0)
+        b.text:SetPoint("RIGHT", -2, 0)
+        b.text:SetJustifyH("LEFT")
+        b.text:SetWordWrap(false)
+        b:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+        b:SetScript("OnClick", function(self) ChooseSound(soundList.key, self.soundName) end)
+        soundList.buttons[i] = b
+    end
+
+    local bar = CreateFrame("Slider", nil, soundList, "BackdropTemplate")
+    bar:SetOrientation("VERTICAL")
+    bar:SetWidth(12)
+    bar:SetPoint("TOPRIGHT", -5, -6)
+    bar:SetPoint("BOTTOMRIGHT", -5, 6)
+    bar:SetBackdrop({
+        bgFile = "Interface\\Buttons\\UI-SliderBar-Background",
+        edgeFile = "Interface\\Buttons\\UI-SliderBar-Border",
+        tile = true, tileSize = 8, edgeSize = 8,
+        insets = { left = 3, right = 3, top = 6, bottom = 6 },
+    })
+    bar:SetThumbTexture("Interface\\Buttons\\UI-ScrollBar-Knob")
+    bar:SetValueStep(1)
+    if bar.SetObeyStepOnDrag then bar:SetObeyStepOnDrag(true) end
+    bar:SetScript("OnValueChanged", function(_, v)
+        if soundList.updatingBar then return end
+        soundList.offset = math.floor(v + 0.5)
+        UpdateSoundList()
+    end)
+    soundList.scrollBar = bar
+
+    soundList:SetScript("OnMouseWheel", function(_, delta)
+        soundList.offset = soundList.offset - delta * 3
+        UpdateSoundList()
+    end)
+
+    if type(UISpecialFrames) == "table" then
+        table.insert(UISpecialFrames, "SimpleSkillWatchSoundList")
+    end
+    panel:HookScript("OnHide", function() soundList:Hide() end)
+    soundList:Hide()
+end
+
+-- key: the setting this picker changes ("soundTrain" or "soundCap").
+local function ToggleSoundList(owner, key)
+    if not soundList then BuildSoundList() end
+    if soundList:IsShown() and soundList.key == key then soundList:Hide() return end
+    soundList.key = key
+    soundList.sounds = ns.GetSounds()
+    soundList.offset = 0
+    -- start scrolled so the current sound is visible
+    for i, snd in ipairs(soundList.sounds) do
+        if snd.name == ns.cfg[key] then soundList.offset = i - math.floor(SOUND_ROWS / 2) break end
+    end
+    soundList:ClearAllPoints()
+    soundList:SetSize(owner:GetWidth() + 24, SOUND_ROWS * SOUND_ROW_H + 12)
+    soundList:SetPoint("TOPLEFT", owner, "BOTTOMLEFT", 0, -2)
+    soundList:Show()
+    UpdateSoundList()
+end
+
+local function HideSoundList()
+    if soundList then soundList:Hide() end
+end
+
+---------------------------------------------------------------------------
 -- Panel: title, a row of tabs, the active tab's page, and a bottom row
 -- (Reset position, Rescan, credit, Defaults) shared by every tab.
 ---------------------------------------------------------------------------
@@ -605,6 +748,56 @@ local function BuildTextPage(cfg, D)
 end
 
 -- Alerts tab --------------------------------------------------------------
+
+-- A labelled button showing the chosen sound (opens the sound list), with a
+-- revert arrow. key: the setting it changes. enabled(): as for Check.
+local function SoundPicker(parent, label, x, y, key, enabled)
+    local cfg, D = ns.cfg, ns.DEFAULTS
+    local title = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    title:SetPoint("TOPLEFT", x, y)
+    title:SetText(label)
+
+    local btn = Button(parent, "", SLIDER_W - REVERT_W - 6 - 20, function(self) ToggleSoundList(self, key) end)
+    btn:SetPoint("TOPLEFT", x, y - 14)
+    btn:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(label)
+        GameTooltip:AddLine("Click a sound in the list to hear it and choose it. Click here again to close the list.", 1, 1, 1, true)
+        GameTooltip:AddLine("Plays even with sound effects turned off.", 0.8, 0.8, 0.8, true)
+        GameTooltip:Show()
+    end)
+    btn:HookScript("OnLeave", function() GameTooltip:Hide() end)
+
+    local revert = CreateFrame("Button", nil, parent)
+    revert:SetSize(REVERT_W, REVERT_W)
+    revert:SetPoint("LEFT", btn, "RIGHT", 6, 0)
+    local icon = revert:CreateTexture(nil, "ARTWORK")
+    icon:SetAllPoints()
+    SetRevertIcon(icon)
+    revert:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+    revert:SetScript("OnClick", function() ChooseSound(key, D[key]) end)
+    revert:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Reset to default (" .. D[key] .. ")")
+        GameTooltip:Show()
+    end)
+    revert:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    function btn:Refresh()
+        self:SetText(cfg[key])
+        local on = not enabled or (enabled() and true or false)
+        local atDefault = cfg[key] == D[key]
+        self:SetEnabled(on)
+        self:SetAlpha(on and 1 or 0.4)
+        title:SetAlpha(on and 1 or 0.4)
+        revert:SetAlpha((not on) and 0.15 or atDefault and 0.3 or 1)
+        revert:SetEnabled(on and not atDefault)
+        if not on and soundList and soundList.key == key then soundList:Hide() end
+    end
+    controls[#controls + 1] = btn
+    return btn
+end
+
 local function BuildAlertsPage(cfg, D)
     local p = NewPage()
 
@@ -637,9 +830,38 @@ local function BuildAlertsPage(cfg, D)
         function(v) cfg.weaponGreenPts = v; Changed() end,
         function(v) return v .. " pts" end,
         function() return D.weaponGreenPts end)
+    y = y - 46
+
+    Header(p, "Thrown weapons", x, y); y = y - 20
+    local chargesCheck = Check(p, "Show thrown charges/durability", x, y,
+        function() return cfg.showThrownCharges end,
+        function(v)
+            cfg.showThrownCharges = v
+            ns.InvalidateMinWidth()
+            Changed()
+            ns.RefreshPanel()
+        end)
+    chargesCheck:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Thrown charges")
+        GameTooltip:AddLine("Thrown weapons use durability as charges. With one equipped, the Thrown bar shows it after the name, e.g. \"Thrown (154/200)\".", 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    chargesCheck:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    y = y - 22
+    Check(p, "Alert low charges", x + 20, y,
+        function() return cfg.alertLowCharges end,
+        function(v) cfg.alertLowCharges = v; Changed(); ns.RefreshPanel() end,
+        function() return cfg.showThrownCharges end)
+    y = y - 30
+    Slider(p, "Low charges below (% of max)", x + 20, y, 5, 80, 5,
+        function() return cfg.lowChargesPct end,
+        function(v) cfg.lowChargesPct = v; Changed() end, pct,
+        function() return D.lowChargesPct end,
+        function() return cfg.showThrownCharges and cfg.alertLowCharges end)
     y = y - 36
 
-    -- right column: professions, then thrown
+    -- right column: professions and their alerts
     local x2, y2 = COL2_X, 0
     Header(p, "Professions", x2, y2); y2 = y2 - 20
     local trainCheck = Check(p, "TRAIN when the next rank is trainable", x2, y2,
@@ -665,36 +887,30 @@ local function BuildAlertsPage(cfg, D)
         function() return cfg.profGameCap end,
         function(v) cfg.profGameCap = v; Changed() end, tostring,
         function() return D.profGameCap end)
-    y2 = y2 - 46
+    y2 = y2 - 40
 
-    Header(p, "Thrown weapons", x2, y2); y2 = y2 - 20
-    local chargesCheck = Check(p, "Show thrown charges/durability", x2, y2,
-        function() return cfg.showThrownCharges end,
-        function(v)
-            cfg.showThrownCharges = v
-            ns.InvalidateMinWidth()
-            Changed()
-            ns.RefreshPanel()
-        end)
-    chargesCheck:SetScript("OnEnter", function(self)
+    local alertCheck = Check(p, "Alert when a profession needs training", x2, y2,
+        function() return cfg.profAlerts end,
+        function(v) cfg.profAlerts = v; ns.RefreshPanel() end)
+    alertCheck:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText("Thrown charges")
-        GameTooltip:AddLine("Thrown weapons use durability as charges. With one equipped, the Thrown bar shows it after the name, e.g. \"Thrown (154/200)\".", 1, 1, 1, true)
+        GameTooltip:SetText("Profession alerts")
+        GameTooltip:AddLine("Plays a sound and prints a line in chat when a skill-up leaves a profession at TRAIN, and again when it is stuck at its trained cap.", 1, 1, 1, true)
+        GameTooltip:AddLine("At TRAIN, at most once every 20 seconds per profession. Never at the profession skill cap, and never for hidden skills.", 0.8, 0.8, 0.8, true)
         GameTooltip:Show()
     end)
-    chargesCheck:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    y2 = y2 - 22
-    Check(p, "Alert low charges", x2 + 20, y2,
-        function() return cfg.alertLowCharges end,
-        function(v) cfg.alertLowCharges = v; Changed(); ns.RefreshPanel() end,
-        function() return cfg.showThrownCharges end)
+    alertCheck:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    y2 = y2 - 26
+    local function AlertsOn() return cfg.profAlerts end
+    SoundPicker(p, "Sound at TRAIN", x2 + 20, y2, "soundTrain", AlertsOn)
+    y2 = y2 - 42
+    SoundPicker(p, "Sound when stuck at the trained cap", x2 + 20, y2, "soundCap", AlertsOn)
+    y2 = y2 - 40
+    Check(p, "Also show it on screen", x2 + 20, y2,
+        function() return cfg.alertOnScreen end,
+        function(v) cfg.alertOnScreen = v end,
+        AlertsOn)
     y2 = y2 - 30
-    Slider(p, "Low charges below (% of max)", x2 + 20, y2, 5, 80, 5,
-        function() return cfg.lowChargesPct end,
-        function(v) cfg.lowChargesPct = v; Changed() end, pct,
-        function() return D.lowChargesPct end,
-        function() return cfg.showThrownCharges and cfg.alertLowCharges end)
-    y2 = y2 - 36
 
     pages.Alerts = p
     pageBottom.Alerts = math.min(y, y2)
@@ -823,6 +1039,7 @@ function SelectTab(name)
     if not pages[name] then name = TABS[1] end
     ns.db.panelTab = name
     if fontList then fontList:Hide() end
+    HideSoundList()
     for tabName, page in pairs(pages) do
         page:SetShown(tabName == name)
         StyleTab(tabButtons[tabName], tabName == name)
@@ -897,6 +1114,7 @@ local function ShowConfirm(question, detail, okText, onOK)
         end)
     end
     if fontList then fontList:Hide() end
+    HideSoundList()
     confirm.question:SetText(question)
     confirm.detail:SetText(detail or "")
     confirm.ok:SetText(okText or "OK")

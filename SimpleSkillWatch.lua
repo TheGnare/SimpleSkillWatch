@@ -93,6 +93,10 @@ local DEFAULTS = {
     useTrainerReqs = true, -- professions: TRAIN when the next rank's skill requirement is met
     profWarnPct    = 90,   -- professions (if the above is off, or rank unknown): red at this % of trained cap
     profGameCap    = 300,  -- professions: the game's real cap; never warn here, gold when reached
+    profAlerts     = true, -- professions: sound + chat line when a skill-up leaves one at TRAIN or at its trained cap
+    alertOnScreen  = true, -- ...and the same line in the middle of the screen
+    soundTrain     = "Quest failed", -- ...sound when the next rank can be trained
+    soundCap       = "Raid warning", -- ...sound when the skill is stuck at its trained cap
     scale          = 1.0,
     width          = 230,  -- frame width; never below ns.MinWidth()
     bgAlpha        = 35,   -- frame background + border opacity, 0-100
@@ -113,6 +117,22 @@ local BUILTIN_FONTS = {
     { name = "Arial Narrow",  path = "Fonts\\ARIALN.TTF" },
     { name = "Skurri",        path = "Fonts\\skurri.ttf" },
     { name = "Morpheus",      path = "Fonts\\MORPHEUS.ttf" },
+}
+
+-- Alert sounds: the game's own, by SOUNDKIT name (id is that sound's usual
+-- number, used if the client doesn't have the name). Harsher ones first.
+-- Sounds registered with LibSharedMedia by other addons are added to the list.
+local BUILTIN_SOUNDS = {
+    { name = "Raid warning",    kit = "RAID_WARNING",             id = 8959 },
+    { name = "Boss warning",    kit = "RAID_BOSS_EMOTE_WARNING",  id = 12197 },
+    { name = "Alarm clock 1",   kit = "ALARM_CLOCK_WARNING_2",    id = 12867 },
+    { name = "Alarm clock 2",   kit = "ALARM_CLOCK_WARNING_3",    id = 12889 },
+    { name = "Ready check",     kit = "READY_CHECK",              id = 8960 },
+    { name = "PvP queue",       kit = "PVP_THROUGH_QUEUE",        id = 8459 },
+    { name = "Quest failed",    kit = "IG_QUEST_FAILED",          id = 847 },
+    { name = "Invite declined", kit = "IG_PLAYER_INVITE_DECLINE", id = 882 },
+    { name = "Map ping",        kit = "MAP_PING",                 id = 3175 },
+    { name = "Whisper",         kit = "TELL_MESSAGE",             id = 3081 },
 }
 
 local COLORS = {
@@ -158,6 +178,8 @@ local function Describe(v)
     if IsSecret(v) then return "<secret>" end
     return tostring(v)
 end
+
+ns.IsSecret, ns.Describe = IsSecret, Describe
 
 local function HasSkillAPI()
     return type(C_SkillInfo) == "table"
@@ -316,6 +338,55 @@ function ns.GetFonts()
         for _, f in ipairs(extra) do list[#list + 1] = f end
     end
     return list
+end
+
+---------------------------------------------------------------------------
+-- Sounds
+---------------------------------------------------------------------------
+
+-- { name, kit, id } or { name, file } list: "None" first, then the built-in
+-- sounds, then any SharedMedia ones.
+function ns.GetSounds()
+    local list, seen = { { name = "None" } }, { none = true }
+    for _, snd in ipairs(BUILTIN_SOUNDS) do
+        list[#list + 1] = snd
+        seen[snd.name:lower()] = true
+    end
+    local ok, LSM = pcall(function() return LibStub and LibStub("LibSharedMedia-3.0", true) end)
+    if ok and LSM and LSM.List and LSM.Fetch then
+        local extra = {}
+        for _, n in ipairs(LSM:List("sound") or {}) do
+            local file = LSM:Fetch("sound", n, true)
+            if type(n) == "string" and not seen[n:lower()]
+                and (type(file) == "string" or type(file) == "number") then
+                seen[n:lower()] = true
+                extra[#extra + 1] = { name = n, file = file }
+            end
+        end
+        table.sort(extra, function(a, b) return a.name < b.name end)
+        for _, snd in ipairs(extra) do list[#list + 1] = snd end
+    end
+    return list
+end
+
+-- Play a sound from the list by name, on the Master channel so it is heard
+-- even with sound effects turned off. fallback: the name to use if this one
+-- is gone (e.g. a SharedMedia sound whose addon was removed).
+-- Returns true if the client accepted it.
+function ns.PlayAlertSound(name, fallback)
+    local entry, spare
+    for _, snd in ipairs(ns.GetSounds()) do
+        if snd.name == name then entry = snd end
+        if snd.name == fallback then spare = snd end
+    end
+    entry = entry or spare
+    if not entry then return false end
+    if entry.file then
+        return type(PlaySoundFile) == "function" and (pcall(PlaySoundFile, entry.file, "Master")) or false
+    end
+    local id = (type(SOUNDKIT) == "table" and SOUNDKIT[entry.kit]) or entry.id
+    if not id then return false end -- "None"
+    return type(PlaySound) == "function" and (pcall(PlaySound, id, "Master")) or false
 end
 
 local fontPath, fontFlags -- resolved by ns.ApplyFonts
@@ -689,6 +760,80 @@ local function ProfColor(id, rank, max)
     -- trainer rule off, or a cap the table doesn't know: % of trained cap
     if rank >= max * cfg.profWarnPct / 100 then return COLORS.red, TAG_TRAIN end
     return COLORS.blue
+end
+
+---------------------------------------------------------------------------
+-- Profession alerts: a sound, a chat line and a line on screen when a
+-- skill-up leaves a profession trainable (TRAIN) or stuck at its trained cap.
+-- Never at the game's real cap, and never for weapons or "Other" skills.
+---------------------------------------------------------------------------
+
+local ALERT_TRAIN, ALERT_CAP = 1, 2
+local TRAIN_ALERT_GAP = 20  -- seconds between TRAIN alerts for one profession
+local alertSeen = {}        -- skill ID -> last readable rank this session
+local lastTrainAlert = {}   -- skill ID -> when its last TRAIN alert was given
+
+local function ProfAlertLevel(id, rank, max)
+    local _, tag = ProfColor(id, rank, max)
+    if not tag then return nil end
+    return rank >= max and ALERT_CAP or ALERT_TRAIN
+end
+
+local function ShowOnScreen(text, r, g, b)
+    local f = UIErrorsFrame
+    if not cfg.alertOnScreen or type(f) ~= "table" or type(f.AddMessage) ~= "function" then return end
+    pcall(f.AddMessage, f, text, r, g, b)
+end
+
+-- Give one alert. id: the skill, for the TRAIN alert's 20 second gap (the
+-- capped alert is never held back). Returns true if it was given.
+function ns.ProfAlert(level, name, rank, max, id)
+    if not cfg.profAlerts then return false end
+    name = name or "A profession"
+    if level == ALERT_CAP then
+        local text = string.format("%s is stuck at %d/%d until you train the next rank.", name, rank, max)
+        ns.PlayAlertSound(cfg.soundCap, DEFAULTS.soundCap)
+        Print(text)
+        ShowOnScreen(text, 1, 0.25, 0.25)
+        return true
+    end
+    local now = type(GetTime) == "function" and GetTime() or 0
+    if id and lastTrainAlert[id] and now - lastTrainAlert[id] < TRAIN_ALERT_GAP then return false end
+    if id then lastTrainAlert[id] = now end
+    local text = string.format("%s is at %d: you can train the next rank.", name, rank)
+    ns.PlayAlertSound(cfg.soundTrain, DEFAULTS.soundTrain)
+    Print(text)
+    ShowOnScreen(text, 1, 0.82, 0)
+    return true
+end
+
+-- Called after each rescan: alert for every shown profession whose skill went
+-- up since the last look. The first look (login, /reload) only takes note.
+local function CheckProfAlerts()
+    for id, k in pairs(charDB.known) do
+        if k.kind == "prof" then
+            local s = ReadSkill(C_SkillInfo.GetSkillLineInfoByID(id), id)
+            local rank, max = s and s.rank, s and s.maxRank
+            if type(rank) == "number" and type(max) == "number" then
+                local before = alertSeen[id]
+                alertSeen[id] = rank -- hidden skills too, so un-hiding one never alerts late
+                if before and rank > before and not cfg.ignored[id] then
+                    local level = ProfAlertLevel(id, rank, max)
+                    if level then ns.ProfAlert(level, s.name or k.name, rank, max, id) end
+                end
+            end
+        end
+    end
+end
+
+-- /sskw alerts test: both alerts, two seconds apart, with made-up numbers.
+function ns.TestProfAlerts()
+    if not cfg.profAlerts then
+        Print("Profession alerts are off. Turn them on with /sskw alerts.")
+        return
+    end
+    ns.ProfAlert(ALERT_TRAIN, "First Aid", 125, 150)
+    C_Timer.After(2, function() ns.ProfAlert(ALERT_CAP, "First Aid", 150, 150) end)
 end
 
 ---------------------------------------------------------------------------
@@ -1307,6 +1452,7 @@ local function Refresh()
     pending = false
     if not cfg then return end
     ScanVisibleLines()
+    CheckProfAlerts()
     Render()
     -- first draw after login with a custom font: run the redraw sequence once,
     -- in case its file wasn't loaded yet
@@ -1690,10 +1836,12 @@ local HELP = {
     "/sskw equipped | unarmed   only show equipped weapon skills / still show Unarmed",
     "/sskw charges   toggle thrown charges on the Thrown bar",
     "/sskw lowcharges [5-80]   toggle the low-charges alert, or set its %",
+    "/sskw alerts [test]   toggle profession alerts (sound and message), or try them",
     "/sskw bg <0-100> | bars <0-100>   opacity % (default 35 / 70)",
     "/sskw ignore <skill name> | unignore <skill name>",
     "/sskw profile [name]   show profiles, or switch to one",
     "/sskw disarmlog   log what the game reports around disarms (this session)",
+    "/sskw castlog [copy | clear]   log what the game reports while you craft or gather",
     "/sskw settings | rescan | events | debug | help",
 }
 
@@ -1736,6 +1884,11 @@ SlashCmdList.SIMPLESKILLWATCH = function(msg)
     elseif cmd == "lowcharges" then
         cfg.alertLowCharges = not cfg.alertLowCharges; Changed()
         Print("Alert low charges: " .. (cfg.alertLowCharges and "on" or "off"))
+    elseif cmd == "alerts" and a == "test" then
+        ns.TestProfAlerts()
+    elseif cmd == "alerts" then
+        cfg.profAlerts = not cfg.profAlerts; Changed()
+        Print("Profession alerts: " .. (cfg.profAlerts and "on" or "off"))
     elseif cmd == "trainreqs" then
         cfg.useTrainerReqs = not cfg.useTrainerReqs; Changed()
         Print("TRAIN by trainer requirements: " .. (cfg.useTrainerReqs and "on" or "off (using % of cap)"))
@@ -1811,6 +1964,8 @@ SlashCmdList.SIMPLESKILLWATCH = function(msg)
             ns.DisarmDetectionAvailable() and "|cff40ff40available|r" or "|cffff4040not available|r", disarmSeen))
     elseif cmd == "disarmlog" then
         ns.ToggleDisarmLog()
+    elseif cmd == "castlog" then
+        if ns.CastLog then ns.CastLog(a) end
     elseif cmd == "debug" then
         DebugDump()
     else
