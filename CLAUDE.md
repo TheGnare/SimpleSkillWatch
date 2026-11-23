@@ -33,6 +33,22 @@ methods are no-ops that return nil. Two traps from that:
 Gnare tests in game and reports back, often with screenshots. In-game diagnostics:
 `/sskw events`, `/sskw disarmlog`, `/sskw debug`, `/sskw fontinfo`.
 
+### How Gnare gets your changes
+
+His `Interface\AddOns\SimpleSkillWatch` folder is a git clone of this repo. He tests
+by pulling and typing `/reload` in game, so a change isn't testable until it's pushed.
+
+- When a change is ready to try (tests pass), commit and push it, then end your reply
+  with exactly what to run, e.g. `git pull` then `/reload`.
+- Push to `main` unless he asks for a branch. Pushing to `main` doesn't publish
+  anything (see Releasing).
+- If you can only push to this session's own branch, push there and give him the
+  commands instead: `git fetch` then `git switch <branch>` (and `git switch main`
+  to go back). When he's happy, merge into `main` if you can, or tell him it still
+  needs merging (a pull request he merges on GitHub works).
+- He can't see the cloud session's files, so never say "the file is ready" for
+  something that isn't pushed.
+
 ## WoW: Forever API notes (learned the hard way)
 
 - Skills come from `C_SkillInfo` (`GetNumSkillLines`, `GetSkillLineInfo`,
