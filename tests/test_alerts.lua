@@ -166,6 +166,25 @@ M.eq(list.shown, true, "list stays open")
 capBtn.scripts.OnClick(capBtn)
 M.eq(list.shown, false, "picker button closes the list")
 
+-- The speaker beside each picker plays that picker's sound without opening the list.
+local speaker = capBtn.play
+assert(speaker, "each picker has a speaker button")
+before = #M.sounds
+speaker.scripts.OnClick(speaker)
+M.eq(#M.sounds, before + 1, "speaker plays a sound")
+M.eq(last()[1], 8960, "the picker's own sound (Ready check)")
+M.eq(list.shown, false, "without opening the list")
+trainBtn.play.scripts.OnClick(trainBtn.play)
+M.eq(last()[1], 847, "the other speaker plays the other sound")
+M.eq(speaker.enabledV, true, "speaker usable while alerts are on")
+-- nothing to play for "None", or while alerts are off
+ns.cfg.soundCap = "None"; ns.RefreshPanel()
+M.eq(speaker.enabledV, false, "speaker greyed out for None")
+ns.cfg.soundCap = "Ready check"; ns.cfg.profAlerts = false; ns.RefreshPanel()
+M.eq(speaker.enabledV, false, "speaker greyed out while alerts are off")
+ns.cfg.profAlerts = true; ns.RefreshPanel()
+M.eq(speaker.enabledV, true, "and usable again")
+
 -- Defaults puts both sounds back.
 ns.ResetDefaults()
 M.eq(ns.cfg.soundCap, "Raid warning", "Defaults restores the capped sound")

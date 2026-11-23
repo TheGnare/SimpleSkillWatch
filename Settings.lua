@@ -118,6 +118,27 @@ local function SetRevertIcon(tex)
     tex:SetTexture("Interface\\PaperDollInfoFrame\\UI-GearManager-Undo")
 end
 
+-- Speaker icon: the old voice chat speaker with its sound waves, or a client
+-- atlas if the client no longer has those files.
+local function SetSpeakerIcon(button)
+    local cone = button:CreateTexture(nil, "ARTWORK")
+    cone:SetAllPoints()
+    if cone:SetTexture("Interface\\Common\\VoiceChat-Speaker") ~= false then
+        local waves = button:CreateTexture(nil, "OVERLAY")
+        waves:SetAllPoints()
+        waves:SetTexture("Interface\\Common\\VoiceChat-On")
+        return
+    end
+    if C_Texture and C_Texture.GetAtlasInfo then
+        for _, atlas in ipairs({ "chatframe-button-icon-speaker-on", "voicechat-icon-speaker" }) do
+            if C_Texture.GetAtlasInfo(atlas) then
+                cone:SetAtlas(atlas)
+                return
+            end
+        end
+    end
+end
+
 -- minV may be a number or a function (e.g. the measured minimum width).
 -- default(): the slider value Defaults would give. fmt(value) -> display text.
 -- enabled(): optional; when it returns false the slider is dimmed and inert.
@@ -754,15 +775,32 @@ end
 -- Alerts tab --------------------------------------------------------------
 
 -- A labelled button showing the chosen sound (opens the sound list), with a
--- revert arrow. key: the setting it changes. enabled(): as for Check.
+-- speaker on its left that plays the chosen sound and a revert arrow on its
+-- right. key: the setting it changes. enabled(): as for Check.
 local function SoundPicker(parent, label, x, y, key, enabled)
     local cfg, D = ns.cfg, ns.DEFAULTS
     local title = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     title:SetPoint("TOPLEFT", x, y)
     title:SetText(label)
 
-    local btn = Button(parent, "", SLIDER_W - REVERT_W - 6 - 20, function(self) ToggleSoundList(self, key) end)
-    btn:SetPoint("TOPLEFT", x, y - 14)
+    local SPEAKER_W = 18
+    local play = CreateFrame("Button", nil, parent)
+    play:SetSize(SPEAKER_W, SPEAKER_W)
+    play:SetPoint("TOPLEFT", x, y - 16)
+    SetSpeakerIcon(play)
+    play:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+    play:SetScript("OnClick", function() ns.PlayAlertSound(cfg[key], D[key]) end)
+    play:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Play this sound")
+        GameTooltip:Show()
+    end)
+    play:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    local btn = Button(parent, "", SLIDER_W - REVERT_W - 6 - 20 - SPEAKER_W - 4,
+        function(self) ToggleSoundList(self, key) end)
+    btn:SetPoint("TOPLEFT", x + SPEAKER_W + 4, y - 14)
+    btn.play = play
     btn:HookScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:SetText(label)
@@ -796,6 +834,10 @@ local function SoundPicker(parent, label, x, y, key, enabled)
         title:SetAlpha(on and 1 or 0.4)
         revert:SetAlpha((not on) and 0.15 or atDefault and 0.3 or 1)
         revert:SetEnabled(on and not atDefault)
+        -- nothing to play for "None"
+        local canPlay = on and cfg[key] ~= "None"
+        play:SetEnabled(canPlay)
+        play:SetAlpha(canPlay and 1 or 0.3)
         if not on and soundList and soundList.key == key then soundList:Hide() end
     end
     controls[#controls + 1] = btn

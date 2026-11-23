@@ -47,7 +47,7 @@ Open the settings window with `/sskw`, by right-clicking the frame while it's un
 | **Alerts** | Weapon thresholds and the low weapon skill warning; thrown charges and the low-charges alert; profession training rules and skill cap; profession alerts, their two sounds, whether the message also shows on screen and for how long |
 | **Profile** | Switch this character's profile, save the current settings as a new profile, copy another profile into this one, or delete one |
 
-Every slider, the font and both sounds have a revert arrow that restores the default. Click a sound in its list to hear it and choose it; the list stays open so you can try several. **Defaults** (with a confirmation) resets the current profile, except the frame position and hidden skills.
+Every slider, the font and both sounds have a revert arrow that restores the default. Click a sound in its list to hear it and choose it; the list stays open so you can try several. The speaker beside each sound plays the one that's chosen. **Defaults** (with a confirmation) resets the current profile, except the frame position and hidden skills.
 
 ### Profiles
 
