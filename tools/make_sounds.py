@@ -66,6 +66,11 @@ SOUNDS = {
     "ThreeNotes":     (mallet, [A5, C6, B5], 0.12, 0.45),
     "ThreeNotesBell": (bell,   [A5, C6, B5], 0.14, 0.70),
     "ThreeNotesLow":  (mallet, [A4, C5, B4], 0.12, 0.50),
+    # the low one with the notes closer together (same notes, same ring)
+    "ThreeNotesLow125": (mallet, [A4, C5, B4], 0.12 / 1.25, 0.50),
+    "ThreeNotesLow150": (mallet, [A4, C5, B4], 0.12 / 1.50, 0.50),
+    "ThreeNotesLow175": (mallet, [A4, C5, B4], 0.12 / 1.75, 0.50),
+    "ThreeNotesLow200": (mallet, [A4, C5, B4], 0.12 / 2.00, 0.50),
 }
 
 

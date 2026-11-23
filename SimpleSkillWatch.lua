@@ -1,8 +1,8 @@
--- SimpleSkillWatch v1.0.9 for World of Warcraft: Forever (interface 16001)
+-- SimpleSkillWatch v1.0.10 for World of Warcraft: Forever (interface 16001)
 -- Shows weapon/defense and profession skills as colored bars in a movable frame.
 
 local ADDON, ns = ...
-ns.VERSION = "1.0.9"
+ns.VERSION = "1.0.10"
 ns.NAME = "SimpleSkillWatch"
 
 ---------------------------------------------------------------------------
@@ -129,6 +129,10 @@ local OWN_SOUNDS = {
     { name = "Three notes",        file = SOUND_DIR .. "ThreeNotes.ogg" },
     { name = "Three notes (bell)", file = SOUND_DIR .. "ThreeNotesBell.ogg" },
     { name = "Three notes (low)",  file = SOUND_DIR .. "ThreeNotesLow.ogg" },
+    { name = "Three notes (low, 1.25x)", file = SOUND_DIR .. "ThreeNotesLow125.ogg" },
+    { name = "Three notes (low, 1.5x)",  file = SOUND_DIR .. "ThreeNotesLow150.ogg" },
+    { name = "Three notes (low, 1.75x)", file = SOUND_DIR .. "ThreeNotesLow175.ogg" },
+    { name = "Three notes (low, 2x)",    file = SOUND_DIR .. "ThreeNotesLow200.ogg" },
 }
 
 -- Alert sounds: the game's own, by SOUNDKIT name (id is that sound's usual

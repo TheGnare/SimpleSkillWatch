@@ -135,6 +135,7 @@ local function listed()
     return table.concat(names, ",")
 end
 local GAME = "None,[SimpleSkillWatch],Two notes,Three notes,Three notes (bell),Three notes (low),"
+    .. "Three notes (low, 1.25x),Three notes (low, 1.5x),Three notes (low, 1.75x),Three notes (low, 2x),"
     .. "[Game sounds],Alarm clock 1,Alarm clock 2,Boss warning,Invite declined,Map ping,"
     .. "PvP queue,Quest failed,Raid warning,Ready check,Whisper"
 M.eq(listed(), GAME, "own sounds, then game sounds alphabetical; no last heading without other addons' sounds")
@@ -154,7 +155,7 @@ for _, s in ipairs(ns.GetSounds()) do
         f:close()
     end
 end
-M.eq(own, 4, "four own sounds")
+M.eq(own, 8, "eight own sounds")
 
 -- SharedMedia sounds follow under their own heading, alphabetical whatever
 -- their case, without a second None; they play as files.
