@@ -1,8 +1,8 @@
--- SimpleSkillWatch v1.0.11 for World of Warcraft: Forever (interface 16001)
+-- SimpleSkillWatch v1.0.12 for World of Warcraft: Forever (interface 16001)
 -- Shows weapon/defense and profession skills as colored bars in a movable frame.
 
 local ADDON, ns = ...
-ns.VERSION = "1.0.11"
+ns.VERSION = "1.0.12"
 ns.NAME = "SimpleSkillWatch"
 
 ---------------------------------------------------------------------------
@@ -799,7 +799,8 @@ end
 
 ---------------------------------------------------------------------------
 -- Profession alerts: a sound, a chat line and a line on screen when a
--- skill-up leaves a profession trainable (TRAIN) or stuck at its trained cap.
+-- skill-up, or a craft or gather that could have given one, finds a profession
+-- trainable (TRAIN) or stuck at its trained cap.
 -- Never at the game's real cap, and never for weapons or "Other" skills.
 ---------------------------------------------------------------------------
 
@@ -893,10 +894,11 @@ local function CheckProfAlerts()
     end
 end
 
--- Crafting or gathering at the trained cap gives no skill-up and the game
--- says nothing about it, so each finished cast is looked at instead: if its
--- profession is stuck at the cap and the recipe or node isn't grey (it could
--- have given a point), the capped alert is given again.
+-- A craft or gather that gives no point (always the case at the trained cap)
+-- is announced by nothing, so each finished cast is looked at instead: if its
+-- profession is at TRAIN or stuck at the cap and the recipe or node isn't
+-- grey (it could have given a point), the alert is given again: every time at
+-- the cap, at most once every 20 seconds at TRAIN.
 -- Seen on Forever: GetTradeSkillLineForRecipe(recipe) returns the recipe's
 -- own line, its name, and the profession (e.g. 2942, "First Aid", 129); for
 -- the spell that opens the profession window just 129, "First Aid".
@@ -904,6 +906,7 @@ end
 -- for a grey one; canSkillUp and numSkillUps were true and 1 for both.
 local DIFFICULTY_TRIVIAL = (Enum and Enum.TradeskillRelativeDifficulty
     and Enum.TradeskillRelativeDifficulty.Trivial) or 3
+local TRAIN_CAST_DELAY = 1   -- seconds after a cast before its TRAIN reminder
 local recipeProfession = {} -- recipe spell ID -> profession skill ID, or false
 
 local function RecipeProfession(spellID)
@@ -997,8 +1000,9 @@ local function CheckCraftAlert(castID, spellID)
     local s = ReadSkill(C_SkillInfo.GetSkillLineInfoByID(id), id)
     local rank, max = s and s.rank, s and s.maxRank
     if type(rank) ~= "number" or type(max) ~= "number" then return end
-    if ProfAlertLevel(id, rank, max) ~= ALERT_CAP then return end
-    -- this very cast reached the cap: the skill-up's own alert is on its way
+    local level = ProfAlertLevel(id, rank, max)
+    if not level then return end
+    -- this very cast already gave a point: the skill-up's own alert is on its way
     if alertSeen[id] and rank > alertSeen[id] then return end
     local state = RecipeState(spellID)
     local could
@@ -1007,7 +1011,24 @@ local function CheckCraftAlert(castID, spellID)
     else
         could = wasGather and GATHERING_IDS[id] and not grey
     end
-    if could then ns.ProfAlert(ALERT_CAP, s.name or k.name, rank, max, id) end
+    if not could then return end
+    local name = s.name or k.name
+    if level == ALERT_CAP then
+        ns.ProfAlert(ALERT_CAP, name, rank, max, id) -- no point can follow at the cap
+        return
+    end
+    -- At TRAIN a point may still be on its way (it lands up to half a second
+    -- after the cast). Look again shortly: if the skill went up, the skill-up
+    -- has done the alerting (TRAIN, or the capped alert if that point reached
+    -- the cap); if not, this is the reminder.
+    C_Timer.After(TRAIN_CAST_DELAY, function()
+        if not cfg or cfg.ignored[id] then return end
+        local now = ReadSkill(C_SkillInfo.GetSkillLineInfoByID(id), id)
+        if not now or now.rank ~= rank or type(now.maxRank) ~= "number" then return end
+        if ProfAlertLevel(id, rank, now.maxRank) == ALERT_TRAIN then
+            ns.ProfAlert(ALERT_TRAIN, name, rank, now.maxRank, id)
+        end
+    end)
 end
 
 -- /sskw alerts test: both alerts, two seconds apart, with made-up numbers.

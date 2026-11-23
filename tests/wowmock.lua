@@ -102,6 +102,9 @@ RECIPES = {
     [3274] = { line = 129, name = "First Aid", info = { learned = false, relativeDifficulty = 0 } },
     [3275] = { line = 2942, name = "First Aid", parent = 129, info = { learned = true, relativeDifficulty = 3 } },
     [3276] = { line = 2942, name = "First Aid", parent = 129, info = { learned = true, relativeDifficulty = 1 } },
+    -- two Cooking recipes: yellow and grey
+    [2538] = { line = 2548, name = "Cooking", parent = 185, info = { learned = true, relativeDifficulty = 1 } },
+    [2539] = { line = 2548, name = "Cooking", parent = 185, info = { learned = true, relativeDifficulty = 3 } },
     -- gathering spells aren't learned recipes and carry no difficulty
     [2368] = { line = 2944, name = "Herbalism", parent = 182, info = { learned = false, relativeDifficulty = 0 } },
     [8613] = { line = 2564, name = "Skinning", parent = 393, info = { learned = false, relativeDifficulty = 0 } },
@@ -114,9 +117,20 @@ C_TradeSkillUI = {
     GetRecipeInfo = function(id) return RECIPES[id] and RECIPES[id].info end,
 }
 
+local castCount = 0
+
+-- A cast finishes and, before anything else happens, gives a skill point
+-- (as in game: the point lands within half a second of the cast).
+function M.castWithPoint(spellID, skillID)
+    castCount = castCount + 1
+    M.event("UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-3-" .. castCount, spellID)
+    byID[skillID].rank = byID[skillID].rank + 1
+    M.event("CHAT_MSG_SKILL", "skill up")
+    M.runTimers()
+end
+
 -- The player finishes casting a spell (a craft, or anything else).
 -- castID: defaults to a new one per call.
-local castCount = 0
 function M.cast(spellID, castID)
     castCount = castCount + 1
     M.event("UNIT_SPELLCAST_SUCCEEDED", "player", castID or ("Cast-3-" .. castCount), spellID)

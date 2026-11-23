@@ -7,9 +7,47 @@ M.login()
 local CAPPED = "First Aid is stuck at 225/225 until you train the next rank."
 local function last() return M.sounds[#M.sounds] or {} end
 
--- Below the cap a craft is silent (the skill-up itself does the alerting).
-M.cast(3276)                          -- First Aid 210/225
-M.eq(#M.sounds, 0, "no sound for a craft below the cap")
+local TRAIN_FILE = "Interface\\AddOns\\SimpleSkillWatch\\Sounds\\ThreeNotesLow.ogg"
+
+-- Below TRAIN a craft is silent.
+M.cast(3276)                          -- First Aid 210/225 (secondary Artisan needs 225)
+M.eq(#M.sounds, 0, "no sound for a craft below TRAIN")
+
+-- At TRAIN, a craft that gives no point is a reminder: the TRAIN sound, at
+-- most once every 20 seconds, and never for a grey recipe.
+M.cast(2538)                          -- Cooking 130/150 (Expert at 125), yellow recipe
+M.eq(#M.sounds, 1, "a craft at TRAIN reminds")
+M.eq(last()[1], TRAIN_FILE, "with the TRAIN sound")
+M.eq(M.chatCount("Cooking is at 130: you can train the next rank."), 1, "and its chat line")
+M.cast(2538)
+M.eq(#M.sounds, 1, "held back within 20 seconds")
+NOW = NOW + 21
+M.cast(2539)
+M.eq(#M.sounds, 1, "no reminder for a grey recipe")
+M.cast(2538)
+M.eq(#M.sounds, 2, "again after 20 seconds")
+
+-- A craft at TRAIN that does give a point alerts once, for the new skill.
+NOW = NOW + 21
+M.castWithPoint(2538, 185)            -- Cooking 131
+M.eq(#M.sounds, 3, "one alert for a craft that gives a point")
+M.eq(M.chatCount("Cooking is at 131: you can train the next rank."), 1, "naming the new skill")
+M.eq(M.chatCount("Cooking is at 130"), 2, "not the old one again")
+
+-- The point that reaches the cap gives the capped alert only, not TRAIN as well.
+NOW = NOW + 21
+M.skill(185).rank = 149; M.refresh()  -- (a jump like this counts as a skill-up: TRAIN alert)
+M.eq(#M.sounds, 4, "TRAIN alert for the jump to 149")
+NOW = NOW + 21
+M.castWithPoint(2538, 185)            -- Cooking 150/150
+M.eq(#M.sounds, 5, "one alert for the craft that reaches the cap")
+M.eq(last()[1], 12867, "and it is the capped one")
+M.skill(185).maxRank = 225; M.refresh()   -- trained Expert: quiet again
+local base = #M.sounds
+M.cast(2538)
+M.eq(#M.sounds, base, "no reminder once the next rank is trained")
+M.sounds = {}
+for i = #M.chat, 1, -1 do M.chat[i] = nil end
 
 -- The craft that reaches the cap alerts once, through its skill-up.
 M.skill(129).rank = 224; M.refresh()

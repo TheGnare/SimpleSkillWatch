@@ -1,22 +1,44 @@
--- Gathering while stuck at the trained cap: the capped alert repeats on every
--- gather unless the node's tooltip shows it as grey.
+-- Gathering at TRAIN and at the trained cap: each gather that could have given
+-- a point alerts, unless the node's tooltip shows it as grey.
 local M = dofile(TESTS_DIR .. "/wowmock.lua")
 local ns = M.load(ADDON_DIR)
 M.login()
-M.addSkill(182, "Herbalism", 149, 150)
+M.addSkill(182, "Herbalism", 100, 150)
 M.refresh()
 
 local HERB = 2368
+local TRAIN_FILE = "Interface\\AddOns\\SimpleSkillWatch\\Sounds\\ThreeNotesLow.ogg"
 local GREY   = { { "Silverleaf", 1, 1, 1 }, { "Herbalism", 0.5, 0.5, 0.5 } }
 local GREEN  = { { "Earthroot", 1, 1, 1 }, { "Herbalism", 0.25, 0.75, 0.25 } }
 local YELLOW = { { "Mageroyal", 1, 1, 1 }, { "Herbalism", 1, 1, 0 } }
+local function last() return M.sounds[#M.sounds] or {} end
 
--- Below the cap gathering is silent; the gather that reaches the cap alerts
--- once, through its skill-up, even though the skill has already changed when
--- the cast is looked at.
+-- Below TRAIN gathering is silent.
 M.tooltip(YELLOW)
 M.gather(HERB)
-M.eq(#M.sounds, 0, "no sound for a gather below the cap")
+M.eq(#M.sounds, 0, "no sound for a gather below TRAIN")
+
+-- At TRAIN (Expert at 125): a gather that gives no point is a reminder, at
+-- most once every 20 seconds, and never from a grey node.
+M.skill(182).rank = 130; M.refresh()  -- (a jump like this counts as a skill-up: TRAIN alert)
+M.eq(#M.sounds, 1, "TRAIN alert for the jump to 130")
+NOW = NOW + 21
+M.gather(HERB)
+M.eq(#M.sounds, 2, "a gather at TRAIN reminds")
+M.eq(last()[1], TRAIN_FILE, "with the TRAIN sound")
+M.gather(HERB)
+M.eq(#M.sounds, 2, "held back within 20 seconds")
+NOW = NOW + 21
+M.tooltip(GREY); M.gather(HERB)
+M.eq(#M.sounds, 2, "no reminder from a grey node")
+M.tooltip(YELLOW); M.gather(HERB)
+M.eq(#M.sounds, 3, "again after 20 seconds")
+
+-- The gather that reaches the cap alerts once, through its skill-up, even
+-- though the skill has already changed when the cast is looked at.
+M.skill(182).rank = 149; M.refresh()  -- within 20 seconds of the last TRAIN alert: quiet
+M.eq(#M.sounds, 3, "quiet inside the 20 seconds")
+M.sounds = {}
 M.skill(182).rank = 150               -- the skill-up lands with the cast...
 M.gather(HERB)
 M.eq(#M.sounds, 0, "the cast that reaches the cap doesn't alert by itself")
