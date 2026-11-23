@@ -181,7 +181,7 @@ capBtn.scripts.OnClick(capBtn)
 local list = SimpleSkillWatchSoundList
 M.eq(list.shown, true, "sound list opens")
 -- it opens scrolled to the current sound; wheel up to the top of the list
-list.scripts.OnMouseWheel(list, 1)
+list.scripts.OnMouseWheel(list, 10)
 M.eq(list.buttons[1].text.text, "None", "wheel scrolls to the top")
 -- the heading row is dimmed and can't be clicked or chosen
 local heading = list.buttons[2]
@@ -193,7 +193,7 @@ heading.scripts.OnClick(heading)
 M.eq(ns.cfg.soundCap, "Alarm clock 1", "clicking a heading changes nothing")
 M.eq(list.buttons[3].mouse, true, "sound rows take clicks")
 M.eq(list.buttons[3].rule.shown, false, "sound rows have no line")
-list.scripts.OnMouseWheel(list, -2)   -- wheel down to the end of the list
+list.scripts.OnMouseWheel(list, -10)  -- wheel down to the end of the list
 local row
 for _, b in ipairs(list.buttons) do
     if b.shown and b.text.text == "Ready check" then row = b end
