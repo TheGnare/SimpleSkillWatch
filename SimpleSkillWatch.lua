@@ -1,8 +1,8 @@
--- SimpleSkillWatch v1.0.12 for World of Warcraft: Forever (interface 16001)
+-- SimpleSkillWatch v1.0.13 for World of Warcraft: Forever (interface 16001)
 -- Shows weapon/defense and profession skills as colored bars in a movable frame.
 
 local ADDON, ns = ...
-ns.VERSION = "1.0.12"
+ns.VERSION = "1.0.13"
 ns.NAME = "SimpleSkillWatch"
 
 ---------------------------------------------------------------------------
@@ -805,7 +805,7 @@ end
 ---------------------------------------------------------------------------
 
 local ALERT_TRAIN, ALERT_CAP = 1, 2
-local TRAIN_ALERT_GAP = 20  -- seconds between TRAIN alerts for one profession
+local TRAIN_ALERT_GAP = 20  -- seconds between TRAIN sounds (and on-screen lines) for one profession
 local alertSeen = {}        -- skill ID -> last readable rank this session
 local lastTrainAlert = {}   -- skill ID -> when its last TRAIN alert was given
 
@@ -853,8 +853,9 @@ local function ShowOnScreen(text, r, g, b)
     f.fade:Play()
 end
 
--- Give one alert. id: the skill, for the TRAIN alert's 20 second gap (the
--- capped alert is never held back). Returns true if it was given.
+-- Give one alert. id: the skill, for the 20 second gap between a profession's
+-- TRAIN sounds (the capped alert is never held back). Returns true if the
+-- sound was played.
 function ns.ProfAlert(level, name, rank, max, id)
     if not cfg.profAlerts then return false end
     name = name or "A profession"
@@ -865,12 +866,14 @@ function ns.ProfAlert(level, name, rank, max, id)
         ShowOnScreen(text, 1, 0.25, 0.25)
         return true
     end
+    -- TRAIN: the chat line every time; the sound and the on-screen line at
+    -- most once every 20 seconds per profession.
+    local text = string.format("%s is at %d: you can train the next rank.", name, rank)
+    Print(text)
     local now = type(GetTime) == "function" and GetTime() or 0
     if id and lastTrainAlert[id] and now - lastTrainAlert[id] < TRAIN_ALERT_GAP then return false end
     if id then lastTrainAlert[id] = now end
-    local text = string.format("%s is at %d: you can train the next rank.", name, rank)
     ns.PlayAlertSound(cfg.soundTrain, DEFAULTS.soundTrain)
-    Print(text)
     ShowOnScreen(text, 1, 0.82, 0)
     return true
 end

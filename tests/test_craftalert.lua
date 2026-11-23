@@ -20,7 +20,8 @@ M.eq(#M.sounds, 1, "a craft at TRAIN reminds")
 M.eq(last()[1], TRAIN_FILE, "with the TRAIN sound")
 M.eq(M.chatCount("Cooking is at 130: you can train the next rank."), 1, "and its chat line")
 M.cast(2538)
-M.eq(#M.sounds, 1, "held back within 20 seconds")
+M.eq(#M.sounds, 1, "sound held back within 20 seconds")
+M.eq(M.chatCount("Cooking is at 130: you can train the next rank."), 2, "the chat line prints every time")
 NOW = NOW + 21
 M.cast(2539)
 M.eq(#M.sounds, 1, "no reminder for a grey recipe")
@@ -32,7 +33,7 @@ NOW = NOW + 21
 M.castWithPoint(2538, 185)            -- Cooking 131
 M.eq(#M.sounds, 3, "one alert for a craft that gives a point")
 M.eq(M.chatCount("Cooking is at 131: you can train the next rank."), 1, "naming the new skill")
-M.eq(M.chatCount("Cooking is at 130"), 2, "not the old one again")
+M.eq(M.chatCount("Cooking is at 130"), 3, "not the old one again")
 
 -- The point that reaches the cap gives the capped alert only, not TRAIN as well.
 NOW = NOW + 21

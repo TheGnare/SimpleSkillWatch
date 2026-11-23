@@ -39,8 +39,11 @@ M.screenTimeUp()
 M.eq(M.onScreen(), nil, "gone when its time is up")
 
 -- More skill-ups within 20 seconds stay quiet; after that it alerts again.
+M.screenTimeUp()
 M.skillUp(393)
-M.eq(#M.sounds, 1, "TRAIN held back within 20 s")
+M.eq(#M.sounds, 1, "TRAIN sound held back within 20 s")
+M.eq(M.onScreen(), nil, "and the on-screen line with it")
+M.eq(M.chatCount("Skinning is at 70: you can train the next rank."), 1, "but the chat line still prints")
 NOW = NOW + 21
 M.skillUp(393)                       -- 71
 M.eq(#M.sounds, 2, "TRAIN again after 20 s")
