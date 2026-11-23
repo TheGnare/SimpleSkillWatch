@@ -88,7 +88,7 @@ by pulling and typing `/reload` in game, so a change isn't testable until it's p
   skill-up's `CHAT_MSG_SKILL` comes right after `SUCCEEDED` (skill still old when
   `SUCCEEDED` fires). The node's difficulty shows only in its tooltip: the line naming
   the profession is colored grey 0.50/0.50/0.50, green 0.25/0.75/0.25, yellow 1/1/0
-  (orange not seen). Mining, skinning and fishing not looked at yet.
+  (orange not seen). That line is the game's own (confirmed with other addons off). Mining, skinning and fishing not looked at yet.
 - Instant spells (opening a profession window) fire `SUCCEEDED` without `START`.
 - Don't build on other addons' tooltip text: Gnare runs "Gather Skill Tooltip", which
   rewrites a node's first line (`Silverleaf (103/1)`).
