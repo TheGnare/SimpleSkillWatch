@@ -17,7 +17,7 @@ A small, movable frame for **World of Warcraft: Forever** that shows your weapon
 - **Only show equipped weapon**: optionally hide weapon skills you aren't using, so the frame shows just your equipped weapons plus Defense (and Unarmed if you like). Updates as you swap.
 - **Stacked or side by side**: Weapons above Professions, or next to each other (either way round).
 - **Lock** the frame in place to make it click-through. The padlock in the corner stays clickable either way: open when unlocked, closed (and dimmed) when locked. Each character has its own lock, and new characters start unlocked.
-- **Minimap button**: left-click opens the settings, right-click shows or hides the frame, and you can drag it around the minimap's edge (each character keeps its own spot). Turn it off on the Frame tab if you don't want it.
+- **Minimap button**: left-click opens the settings, right-click shows or hides the frame, and you can drag it around the minimap's edge (each character keeps its own spot). It follows a square minimap's edges too, when the addon that reshapes the minimap reports its shape. Turn it off on the Frame tab if you don't want it.
 - **Profiles**: save your settings under a name and use them on other characters. Each character uses one profile, named after its class by default.
 - **Light on resources**: no polling or per-frame updates. The frame redraws only when the game signals a skill, equipment or durability change, and bursts of signals are combined into one redraw.
 

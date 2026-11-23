@@ -45,6 +45,30 @@ b.scripts.OnDragStop(b)
 M.eq(b.scripts.OnUpdate, nil, "per-frame work stops with the drag")
 M.eq(SimpleSkillWatchCharDB.minimapAngle, 90, "its place is saved for this character")
 
+-- Minimap shape: an addon that reshapes the minimap says so through
+-- GetMinimapShape(). On a square edge the button follows the straight sides
+-- and can go out into the corner; round corners stay round.
+local function at(angle)
+    SimpleSkillWatchCharDB.minimapAngle = angle
+    M.slash("title"); M.slash("title")   -- any settings change re-places the button
+    local px, py = place()
+    return px .. "," .. py
+end
+M.eq(at(20), "70,26", "round: on the circle")
+GetMinimapShape = function() return "SQUARE" end
+M.eq(at(20), "75,33", "square: on the right edge")
+M.eq(at(45), "68,68", "square: out in the corner")
+M.eq(at(180), "-75,0", "square: middle of the left edge")
+GetMinimapShape = function() return "CORNER-TOPLEFT" end   -- only the top-left corner is round
+M.eq(at(135), "-53,53", "round corner: on the circle")
+M.eq(at(45), "68,68", "its square corners: out in the corner")
+GetMinimapShape = function() return "SOMETHING-NEW" end
+M.eq(at(20), "70,26", "unknown shape: treated as round")
+GetMinimapShape = function() error("broken") end
+M.eq(at(20), "70,26", "a failing shape function: treated as round")
+GetMinimapShape = nil
+M.eq(at(90), "0,75", "no shape function: round")
+
 -- /sskw minimap and the settings checkbox hide and show it, keeping its place.
 M.slash("minimap")
 M.eq(ns.cfg.minimapButton, false, "/sskw minimap turns it off")

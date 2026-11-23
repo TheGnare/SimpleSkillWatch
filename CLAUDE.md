@@ -94,6 +94,9 @@ by pulling and typing `/reload` in game, so a change isn't testable until it's p
 - Instant spells (opening a profession window) fire `SUCCEEDED` without `START`.
 - Don't build on other addons' tooltip text: Gnare runs "Gather Skill Tooltip", which
   rewrites a node's first line (`Silverleaf (103/1)`).
+- Minimap shape: no game API. Addons that reshape the minimap define a global
+  `GetMinimapShape()` returning `"ROUND"`, `"SQUARE"`, `"CORNER-TOPLEFT"`, … (a
+  convention; absent means round). Not yet tried against a real minimap addon.
 - Register events through `SafeRegister` (checks `C_EventUtils.IsEventValid`).
 - Fonts from other addons may not be loaded at login: `SetFont` can fail or draw blank,
   and re-applying the same face is ignored, so the code switches to the default face and

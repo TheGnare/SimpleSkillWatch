@@ -1,8 +1,8 @@
--- SimpleSkillWatch v1.0.5 for World of Warcraft: Forever (interface 16001)
+-- SimpleSkillWatch v1.0.6 for World of Warcraft: Forever (interface 16001)
 -- Shows weapon/defense and profession skills as colored bars in a movable frame.
 
 local ADDON, ns = ...
-ns.VERSION = "1.0.5"
+ns.VERSION = "1.0.6"
 ns.NAME = "SimpleSkillWatch"
 
 ---------------------------------------------------------------------------
@@ -1595,7 +1595,8 @@ end
 
 ---------------------------------------------------------------------------
 -- Minimap button: left-click opens the settings, right-click shows or hides
--- the frame, dragging moves it around the minimap's edge. Whether it shows
+-- the frame, dragging moves it around the minimap's edge (round or square,
+-- see MinimapCorners). Whether it shows
 -- is a profile setting; its place is kept per character, like the frame's.
 ---------------------------------------------------------------------------
 
@@ -1603,11 +1604,53 @@ local ICON = "Interface\\AddOns\\" .. ADDON .. "\\icon"
 local MINIMAP_DEFAULT_ANGLE = 215 -- degrees, counterclockwise from the minimap's right edge
 local minimapButton
 
+-- Addons that reshape the minimap say so through a global GetMinimapShape()
+-- (a convention among minimap addons; the game itself has no such function,
+-- and without it the minimap is round). For each shape: which corners are
+-- still round, in the order bottom-right, bottom-left, top-right, top-left.
+local MINIMAP_ROUND_CORNERS = {
+    ["ROUND"]                 = { true,  true,  true,  true  },
+    ["SQUARE"]                = { false, false, false, false },
+    ["CORNER-TOPLEFT"]        = { false, false, false, true  },
+    ["CORNER-TOPRIGHT"]       = { false, false, true,  false },
+    ["CORNER-BOTTOMLEFT"]     = { false, true,  false, false },
+    ["CORNER-BOTTOMRIGHT"]    = { true,  false, false, false },
+    ["SIDE-LEFT"]             = { false, true,  false, true  },
+    ["SIDE-RIGHT"]            = { true,  false, true,  false },
+    ["SIDE-TOP"]              = { false, false, true,  true  },
+    ["SIDE-BOTTOM"]           = { true,  true,  false, false },
+    ["TRICORNER-TOPLEFT"]     = { false, true,  true,  true  },
+    ["TRICORNER-TOPRIGHT"]    = { true,  false, true,  true  },
+    ["TRICORNER-BOTTOMLEFT"]  = { true,  true,  false, true  },
+    ["TRICORNER-BOTTOMRIGHT"] = { true,  true,  true,  false },
+}
+
+local function MinimapCorners()
+    local shape
+    if type(GetMinimapShape) == "function" then
+        local ok, v = pcall(GetMinimapShape)
+        if ok and not IsSecret(v) then shape = v end
+    end
+    return MINIMAP_ROUND_CORNERS[shape] or MINIMAP_ROUND_CORNERS.ROUND
+end
+
+-- The button sits on the minimap's edge in the direction of its saved angle:
+-- on the circle where that corner is round, on the straight edges where it's
+-- square (so it can be dragged out into a square corner).
 local function PlaceMinimapButton()
     local angle = math.rad(charDB.minimapAngle or MINIMAP_DEFAULT_ANGLE)
-    local radius = (Minimap:GetWidth() or 140) / 2 + 5
+    local x, y = math.cos(angle), math.sin(angle)
+    local w = (Minimap:GetWidth() or 140) / 2 + 5
+    local h = (Minimap:GetHeight() or Minimap:GetWidth() or 140) / 2 + 5
+    local corner = 1 + (x < 0 and 1 or 0) + (y > 0 and 2 or 0)
+    if MinimapCorners()[corner] then
+        x, y = x * w, y * h
+    else
+        x = math.max(-w, math.min(x * (math.sqrt(2 * w * w) - 10), w))
+        y = math.max(-h, math.min(y * (math.sqrt(2 * h * h) - 10), h))
+    end
     minimapButton:ClearAllPoints()
-    minimapButton:SetPoint("CENTER", Minimap, "CENTER", math.cos(angle) * radius, math.sin(angle) * radius)
+    minimapButton:SetPoint("CENTER", Minimap, "CENTER", x, y)
 end
 
 -- Runs every frame, but only while the button is being dragged.
