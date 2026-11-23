@@ -1,0 +1,11 @@
+## Interface: 16001
+## Title: SimpleSkillWatch
+## Notes: Movable frame of weapon, defense and profession skill bars, colored by thresholds you set.
+## Author: Gnare
+## Version: 1.0.0
+## SavedVariables: SimpleSkillWatchDB
+## SavedVariablesPerCharacter: SimpleSkillWatchCharDB
+## OptionalDeps: LibSharedMedia-3.0
+
+SimpleSkillWatch.lua
+Settings.lua

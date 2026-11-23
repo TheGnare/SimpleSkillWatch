@@ -1,0 +1,14 @@
+# BigWigs packager settings: https://github.com/BigWigsMods/packager
+package-as: SimpleSkillWatch
+
+# Release notes for CurseForge and GitHub: the workflow writes this version's
+# section of CHANGELOG.md here before packaging.
+manual-changelog:
+  filename: RELEASE_NOTES.md
+  markup-type: markdown
+
+# Development files that don't belong in the addon zip (dotfiles are always skipped).
+ignore:
+  - tests
+  - CLAUDE.md
+  - RELEASE_NOTES.md

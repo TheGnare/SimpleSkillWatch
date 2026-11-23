@@ -1,0 +1,45 @@
+name: Release
+
+# Push a tag like v1.0.1 to publish: runs the tests, checks the version,
+# then builds the zip and uploads it to CurseForge and GitHub Releases.
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # create the GitHub release
+    env:
+      CF_API_KEY: ${{ secrets.CF_API_KEY }}
+      GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install lupa
+      - name: Tests
+        run: python tests/run_tests.py
+
+      - name: Version in the addon matches the tag
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          toc=$(sed -n 's/^## Version: *//p' SimpleSkillWatch.toc | tr -d '\r')
+          lua=$(sed -n 's/^ns.VERSION = "\(.*\)"/\1/p' SimpleSkillWatch.lua)
+          echo "tag=$tag toc=$toc lua=$lua"
+          [ "$tag" = "$toc" ] && [ "$tag" = "$lua" ] || { echo "::error::Version mismatch: bump SimpleSkillWatch.toc and ns.VERSION to $tag"; exit 1; }
+          grep -q "^## $tag\$" CHANGELOG.md || { echo "::error::CHANGELOG.md has no '## $tag' section"; exit 1; }
+
+      - name: Release notes from CHANGELOG.md
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          awk -v v="## $tag" '$0==v{on=1;next} /^## /{if(on)exit} on' CHANGELOG.md > RELEASE_NOTES.md
+          cat RELEASE_NOTES.md
+
+      - name: Package and upload
+        uses: BigWigsMods/packager@v2
