@@ -1,8 +1,8 @@
--- SimpleSkillWatch v1.0.1 for World of Warcraft: Forever (interface 16001)
+-- SimpleSkillWatch v1.0.2 for World of Warcraft: Forever (interface 16001)
 -- Shows weapon/defense and profession skills as colored bars in a movable frame.
 
 local ADDON, ns = ...
-ns.VERSION = "1.0.1"
+ns.VERSION = "1.0.2"
 ns.NAME = "SimpleSkillWatch"
 
 ---------------------------------------------------------------------------
@@ -824,6 +824,57 @@ local function CheckProfAlerts()
             end
         end
     end
+end
+
+-- Crafting at the trained cap gives no skill-up and the game says nothing
+-- about it, so each finished craft is looked at instead: if its profession is
+-- stuck at the cap and the recipe isn't grey (it could have given a point),
+-- the capped alert is given again.
+-- Seen on Forever: GetTradeSkillLineForRecipe(recipe) returns the recipe's
+-- own line, its name, and the profession (e.g. 2942, "First Aid", 129); for
+-- the spell that opens the profession window just 129, "First Aid".
+-- GetRecipeInfo(recipe).relativeDifficulty was 1 for a yellow recipe and 3
+-- for a grey one; canSkillUp and numSkillUps were true and 1 for both.
+local DIFFICULTY_TRIVIAL = (Enum and Enum.TradeskillRelativeDifficulty
+    and Enum.TradeskillRelativeDifficulty.Trivial) or 3
+local recipeProfession = {} -- recipe spell ID -> profession skill ID, or false
+
+local function RecipeProfession(spellID)
+    local known = recipeProfession[spellID]
+    if known ~= nil then return known end
+    local api = C_TradeSkillUI
+    if type(api) ~= "table" or type(api.GetTradeSkillLineForRecipe) ~= "function" then return false end
+    local ok, line, _, parent = pcall(api.GetTradeSkillLineForRecipe, spellID)
+    if not ok or IsSecret(line) or IsSecret(parent) then return false end
+    local id = (parent and PROFESSION_IDS[parent] and parent) or (line and PROFESSION_IDS[line] and line) or false
+    recipeProfession[spellID] = id
+    return id
+end
+
+-- False for anything that can't give a point: a recipe the game calls grey,
+-- and spells that aren't learned recipes (opening the profession window).
+local function RecipeCanSkillUp(spellID)
+    local api = C_TradeSkillUI
+    if type(api.GetRecipeInfo) ~= "function" then return false end
+    local ok, info = pcall(api.GetRecipeInfo, spellID)
+    if not ok or IsSecret(info) or type(info) ~= "table" then return false end
+    local learned, difficulty = info.learned, info.relativeDifficulty
+    if IsSecret(learned) or not learned then return false end
+    if IsSecret(difficulty) or type(difficulty) ~= "number" then return true end -- unknown: assume it could
+    return difficulty ~= DIFFICULTY_TRIVIAL
+end
+
+-- Called for each spell the player finishes casting.
+local function CheckCraftAlert(spellID)
+    if not cfg or not cfg.profAlerts or IsSecret(spellID) or type(spellID) ~= "number" then return end
+    local id = RecipeProfession(spellID)
+    local k = id and charDB.known[id]
+    if not k or k.kind ~= "prof" or cfg.ignored[id] then return end
+    local s = ReadSkill(C_SkillInfo.GetSkillLineInfoByID(id), id)
+    local rank, max = s and s.rank, s and s.maxRank
+    if type(rank) ~= "number" or type(max) ~= "number" then return end
+    if ProfAlertLevel(id, rank, max) ~= ALERT_CAP or not RecipeCanSkillUp(spellID) then return end
+    ns.ProfAlert(ALERT_CAP, s.name or k.name, rank, max, id)
 end
 
 -- /sskw alerts test: both alerts, two seconds apart, with made-up numbers.
@@ -1698,7 +1749,7 @@ local function CheckDisarm()
     end
 end
 
-events:SetScript("OnEvent", function(self, event, arg1, arg2)
+events:SetScript("OnEvent", function(self, event, arg1, arg2, arg3)
     eventCounts[event] = (eventCounts[event] or 0) + 1
     if event == "ADDON_LOADED" then
         if arg1 ~= ADDON then return end
@@ -1730,6 +1781,7 @@ events:SetScript("OnEvent", function(self, event, arg1, arg2)
         for _, ev in ipairs(REFRESH_EVENTS) do eventStatus[ev] = SafeRegister(ev) end
         eventStatus.PLAYER_EQUIPMENT_CHANGED = SafeRegister("PLAYER_EQUIPMENT_CHANGED")
         eventStatus.UPDATE_INVENTORY_DURABILITY = SafeRegister("UPDATE_INVENTORY_DURABILITY")
+        eventStatus.UNIT_SPELLCAST_SUCCEEDED = SafeRegisterUnit("UNIT_SPELLCAST_SUCCEEDED")
         for ev, kind in pairs(DISARM_EVENTS) do
             eventStatus[ev] = (kind == "unit") and SafeRegisterUnit(ev) or SafeRegister(ev)
         end
@@ -1752,6 +1804,10 @@ events:SetScript("OnEvent", function(self, event, arg1, arg2)
             LogSlotsIfChanged(event)
         end
         CheckDisarm()
+
+    elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
+        -- (unit, cast, spell): a finished craft, for the repeat alert at the trained cap
+        if not IsSecret(arg1) and arg1 == "player" then CheckCraftAlert(arg3) end
 
     elseif event == "UPDATE_INVENTORY_DURABILITY" then
         -- fires on every throw: refresh only the Thrown bar, nothing else
@@ -1951,10 +2007,11 @@ SlashCmdList.SIMPLESKILLWATCH = function(msg)
     elseif cmd == "rescan" then
         ns.Rescan(); Print("Rescanned skills.")
     elseif cmd == "events" then
-        Print("Rescan triggers (registered? / times fired this session):")
+        Print("Events watched (registered? / times fired this session):")
         local list = { unpack(REFRESH_EVENTS) }
         list[#list + 1] = "PLAYER_EQUIPMENT_CHANGED"
         list[#list + 1] = "UPDATE_INVENTORY_DURABILITY"
+        list[#list + 1] = "UNIT_SPELLCAST_SUCCEEDED"
         for _, ev in ipairs(DISARM_EVENT_ORDER) do list[#list + 1] = ev end
         for _, ev in ipairs(list) do
             print(string.format("  %-27s %s  %d", ev,

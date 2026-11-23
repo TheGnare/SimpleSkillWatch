@@ -5,7 +5,7 @@ M.login()
 
 local function watcher()
     for _, f in ipairs(M.frames) do
-        if f.events.UNIT_SPELLCAST_SUCCEEDED then return f end
+        if f.events.TRADE_SKILL_SHOW then return f end
     end
 end
 local function log() return table.concat(SimpleSkillWatchDB.castlog or {}, "\n") end

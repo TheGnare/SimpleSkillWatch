@@ -250,6 +250,8 @@ local function LogSpellDetails(id)
     end
     Try("C_TradeSkillUI.GetTradeSkillLineForRecipe", Field(C_TradeSkillUI, "GetTradeSkillLineForRecipe"))
     Try("C_TradeSkillUI.GetRecipeInfo", Field(C_TradeSkillUI, "GetRecipeInfo"))
+    Try("C_TradeSkillUI.GetProfessionInfoByRecipeID", Field(C_TradeSkillUI, "GetProfessionInfoByRecipeID"))
+    Try("C_TradeSkillUI.GetGatheringOperationInfo", Field(C_TradeSkillUI, "GetGatheringOperationInfo"))
     Try("C_Spell.GetSpellInfo", Field(C_Spell, "GetSpellInfo"))
     Try("C_Spell.GetSpellSkillLineAbilityRank", Field(C_Spell, "GetSpellSkillLineAbilityRank"))
     Try("C_Spell.GetSpellTradeSkillLink", Field(C_Spell, "GetSpellTradeSkillLink"))

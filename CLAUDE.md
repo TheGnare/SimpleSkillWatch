@@ -68,6 +68,19 @@ by pulling and typing `/reload` in game, so a change isn't testable until it's p
   `GetInventoryItemEquippedUnusable` stays false while disarmed.
 - Rescans are triggered by `SKILL_LINES_CHANGED`, `CHAT_MSG_SKILL`, `SPELLS_CHANGED`
   (all confirmed to fire); bursts are coalesced into one redraw (0.25 s).
+- Professions use the modern `C_TradeSkillUI` (client 1.60.1). The old `GetTradeSkill*` /
+  `GetCraft*` globals and `TRADE_SKILL_UPDATE` / `CRAFT_*` events don't exist.
+- A craft fires `TRADE_SKILL_CRAFT_BEGIN(recipe)`, then `UNIT_SPELLCAST_SENT/START/
+  SUCCEEDED/STOP` with the recipe's spell ID readable, then
+  `TRADE_SKILL_ITEM_CRAFTED_RESULT`. A skill-up's `CHAT_MSG_SKILL` comes about 0.4 s
+  after `SUCCEEDED`. Nothing fires for a craft that gives no point.
+- `C_TradeSkillUI.GetTradeSkillLineForRecipe(recipe)` returns the recipe's own line, its
+  name and the profession (`2942, "First Aid", 129`); for the spell that opens the
+  window just `129, "First Aid"`. `GetRecipeInfo(recipe).relativeDifficulty` was 1 for
+  a yellow recipe and 3 for a grey one (0 orange and 2 green are assumed, not seen);
+  `maxTrivialLevel` is the skill where it turns grey. `canSkillUp` and `numSkillUps`
+  don't follow difficulty (true and 1 on a grey recipe). The window-opening spell has
+  `learned = false`. Gathering not looked at yet.
 - Register events through `SafeRegister` (checks `C_EventUtils.IsEventValid`).
 - Fonts from other addons may not be loaded at login: `SetFont` can fail or draw blank,
   and re-applying the same face is ignored, so the code switches to the default face and

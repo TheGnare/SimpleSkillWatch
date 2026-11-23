@@ -98,6 +98,29 @@ function M.skillUp(id, n)
     M.runTimers()
 end
 
+-- Recipes as C_TradeSkillUI describes them on Forever: recipe spell ID ->
+-- { line, name, profession } and the fields of GetRecipeInfo the addon reads.
+-- 3274 is the spell that opens the First Aid window (not a learned recipe).
+RECIPES = {
+    [3274] = { line = 129, name = "First Aid", info = { learned = false, relativeDifficulty = 0 } },
+    [3275] = { line = 2942, name = "First Aid", parent = 129, info = { learned = true, relativeDifficulty = 3 } },
+    [3276] = { line = 2942, name = "First Aid", parent = 129, info = { learned = true, relativeDifficulty = 1 } },
+    [8613] = { line = 2564, name = "Skinning", parent = 393, info = { learned = true, relativeDifficulty = 2 } },
+}
+C_TradeSkillUI = {
+    GetTradeSkillLineForRecipe = function(id)
+        local r = RECIPES[id]
+        if r then return r.line, r.name, r.parent end
+    end,
+    GetRecipeInfo = function(id) return RECIPES[id] and RECIPES[id].info end,
+}
+
+-- The player finishes casting a spell (a craft, or anything else).
+function M.cast(spellID)
+    M.event("UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-3-1", spellID)
+    M.runTimers()
+end
+
 -- Add a weapon skill right after the "Weapon Skills" header.
 function M.addSkill(id, name, rank, maxRank)
     table.insert(LINES, 2, { skillID = id, name = name, rank = rank, maxRank = maxRank,
