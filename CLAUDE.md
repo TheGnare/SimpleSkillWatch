@@ -106,7 +106,10 @@ by pulling and typing `/reload` in game, so a change isn't testable until it's p
   back, with timed redraws.
 - Forever trainers have no level requirement for profession ranks; TRAIN depends on
   skill only (Journeyman 50, Expert 125, Artisan 200; secondary Artisan 225).
-- `/reload` loads a newly installed addon; no restart needed.
+- `/reload` loads a newly installed addon and files newly added to one (a new `.lua` in
+  the .toc, `icon.tga`, new sounds); no restart needed. It does NOT re-read a sound file
+  whose contents changed: after regenerating an existing `Sounds/*.ogg`, tell Gnare to
+  quit and restart the client (or give the file a new name).
 
 ## Saved data
 
