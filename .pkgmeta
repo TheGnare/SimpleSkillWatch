@@ -10,5 +10,6 @@ manual-changelog:
 # Development files that don't belong in the addon zip (dotfiles are always skipped).
 ignore:
   - tests
+  - tools
   - CLAUDE.md
   - RELEASE_NOTES.md

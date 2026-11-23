@@ -134,9 +134,27 @@ local function listed()
     for _, s in ipairs(ns.GetSounds()) do names[#names + 1] = s.name or ("[" .. s.header .. "]") end
     return table.concat(names, ",")
 end
-local GAME = "None,[Game sounds],Alarm clock 1,Alarm clock 2,Boss warning,Invite declined,Map ping,"
+local GAME = "None,[SimpleSkillWatch],Two notes,Three notes,Three notes (bell),Three notes (low),"
+    .. "[Game sounds],Alarm clock 1,Alarm clock 2,Boss warning,Invite declined,Map ping,"
     .. "PvP queue,Quest failed,Raid warning,Ready check,Whisper"
-M.eq(listed(), GAME, "game sounds alphabetical under their heading; no second heading without other sounds")
+M.eq(listed(), GAME, "own sounds, then game sounds alphabetical; no last heading without other addons' sounds")
+
+-- The addon's own sounds play as files from its Sounds folder, and each file
+-- named in the list is there and is an Ogg file.
+ns.PlayAlertSound("Three notes")
+M.eq(last()[1], "Interface\\AddOns\\SimpleSkillWatch\\Sounds\\ThreeNotes.ogg", "own sound plays its file")
+M.eq(last()[2], "Master", "on the Master channel")
+local own = 0
+for _, s in ipairs(ns.GetSounds()) do
+    local file = type(s.file) == "string" and s.file:match("\\Sounds\\(.+)$")
+    if file then
+        own = own + 1
+        local f = assert(io.open(ADDON_DIR .. "/Sounds/" .. file, "rb"), file .. " is missing")
+        M.eq(f:read(4), "OggS", file .. " is an Ogg file")
+        f:close()
+    end
+end
+M.eq(own, 4, "four own sounds")
 
 -- SharedMedia sounds follow under their own heading, alphabetical whatever
 -- their case, without a second None; they play as files.
@@ -161,9 +179,12 @@ assert(trainBtn and capBtn, "both sound pickers show their sound")
 capBtn.scripts.OnClick(capBtn)
 local list = SimpleSkillWatchSoundList
 M.eq(list.shown, true, "sound list opens")
+-- it opens scrolled to the current sound; wheel up to the top of the list
+list.scripts.OnMouseWheel(list, 1)
+M.eq(list.buttons[1].text.text, "None", "wheel scrolls to the top")
 -- the heading row is dimmed and can't be clicked or chosen
 local heading = list.buttons[2]
-M.eq(heading.text.text, "Game sounds", "heading row in the list")
+M.eq(heading.text.text, "SimpleSkillWatch", "heading row in the list")
 M.eq(heading.mouse, false, "heading takes no clicks")
 M.eq(heading.rule.shown, true, "heading has its line")
 M.eq(heading.check.shown, false, "heading is never ticked")
@@ -171,6 +192,7 @@ heading.scripts.OnClick(heading)
 M.eq(ns.cfg.soundCap, "Alarm clock 1", "clicking a heading changes nothing")
 M.eq(list.buttons[3].mouse, true, "sound rows take clicks")
 M.eq(list.buttons[3].rule.shown, false, "sound rows have no line")
+list.scripts.OnMouseWheel(list, -2)   -- wheel down to the end of the list
 local row
 for _, b in ipairs(list.buttons) do
     if b.shown and b.text.text == "Ready check" then row = b end

@@ -1,8 +1,8 @@
--- SimpleSkillWatch v1.0.8 for World of Warcraft: Forever (interface 16001)
+-- SimpleSkillWatch v1.0.9 for World of Warcraft: Forever (interface 16001)
 -- Shows weapon/defense and profession skills as colored bars in a movable frame.
 
 local ADDON, ns = ...
-ns.VERSION = "1.0.8"
+ns.VERSION = "1.0.9"
 ns.NAME = "SimpleSkillWatch"
 
 ---------------------------------------------------------------------------
@@ -119,6 +119,16 @@ local BUILTIN_FONTS = {
     { name = "Arial Narrow",  path = "Fonts\\ARIALN.TTF" },
     { name = "Skurri",        path = "Fonts\\skurri.ttf" },
     { name = "Morpheus",      path = "Fonts\\MORPHEUS.ttf" },
+}
+
+-- SimpleSkillWatch's own sounds, made by tools/make_sounds.py (nothing else
+-- in the game or in other addons sounds like them, so it's clear who's calling).
+local SOUND_DIR = "Interface\\AddOns\\" .. ADDON .. "\\Sounds\\"
+local OWN_SOUNDS = {
+    { name = "Two notes",          file = SOUND_DIR .. "TwoNotes.ogg" },
+    { name = "Three notes",        file = SOUND_DIR .. "ThreeNotes.ogg" },
+    { name = "Three notes (bell)", file = SOUND_DIR .. "ThreeNotesBell.ogg" },
+    { name = "Three notes (low)",  file = SOUND_DIR .. "ThreeNotesLow.ogg" },
 }
 
 -- Alert sounds: the game's own, by SOUNDKIT name (id is that sound's usual
@@ -353,12 +363,18 @@ end
 -- Sounds
 ---------------------------------------------------------------------------
 
--- The sound list as the picker shows it: "None", then a heading and the
--- game's own sounds, then (if there are any) a heading and the sounds other
--- addons share through SharedMedia. Each group is alphabetical.
+-- The sound list as the picker shows it: "None", then under a heading each:
+-- the addon's own sounds (in the order above), the game's sounds, and (if
+-- there are any) the sounds other addons share through SharedMedia, the last
+-- two groups alphabetical.
 -- Entries: { name, kit, id }, { name, file }, or { header = text } for a heading.
 function ns.GetSounds()
     local list, seen = { { name = "None" } }, { none = true }
+    list[#list + 1] = { header = "SimpleSkillWatch" }
+    for _, snd in ipairs(OWN_SOUNDS) do
+        list[#list + 1] = snd
+        seen[snd.name:lower()] = true
+    end
     local builtin = {}
     for _, snd in ipairs(BUILTIN_SOUNDS) do
         builtin[#builtin + 1] = snd
