@@ -3,7 +3,7 @@
 ## Notes: Movable frame of weapon, defense and profession skill bars, colored by thresholds you set.
 ## Author: Gnare
 ## IconTexture: Interface\AddOns\SimpleSkillWatch\icon.tga
-## Version: 1.0.10
+## Version: 1.0.11
 ## SavedVariables: SimpleSkillWatchDB
 ## SavedVariablesPerCharacter: SimpleSkillWatchCharDB
 ## OptionalDeps: LibSharedMedia-3.0

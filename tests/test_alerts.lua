@@ -7,11 +7,13 @@ M.login()
 
 local p = SimpleSkillWatchDB.profiles.Warrior
 M.eq(p.profAlerts, true, "alerts on for an older profile")
-M.eq(p.soundTrain, "Quest failed", "default TRAIN sound")
+M.eq(p.soundTrain, "Three notes (low)", "default TRAIN sound")
 M.eq(p.soundCap, "Alarm clock 1", "default capped sound")
 M.eq(p.alertScreenTime, 6, "default time on screen")
 
 local function last() return M.sounds[#M.sounds] or {} end
+-- the default TRAIN sound is one of the addon's own files
+local TRAIN_FILE = "Interface\\AddOns\\SimpleSkillWatch\\Sounds\\ThreeNotesLow.ogg"
 
 -- Login alone is silent, even with professions already at TRAIN.
 M.eq(#M.sounds, 0, "no sound at login")
@@ -22,10 +24,10 @@ M.eq(#M.sounds, 0, "no sound on a rescan without a skill-up")
 M.skillUp(165)                       -- Leatherworking 21 -> 22 of 75
 M.eq(#M.sounds, 0, "no sound below TRAIN")
 
--- A skill-up while at TRAIN: the milder sound, by SOUNDKIT name, on Master.
+-- A skill-up while at TRAIN: the milder sound (the addon's own file), on Master.
 M.skillUp(393)                       -- Skinning 68 -> 69 of 75 (Journeyman at 50)
 M.eq(#M.sounds, 1, "TRAIN sound played")
-M.eq(last()[1], 847, "TRAIN sound is Quest failed")
+M.eq(last()[1], TRAIN_FILE, "TRAIN sound is the addon's own Three notes (low)")
 M.eq(last()[2], "Master", "plays on the Master channel")
 M.eq(M.chatCount("Skinning is at 69: you can train the next rank."), 1, "TRAIN chat line")
 M.eq(M.onScreen(), "Skinning is at 69: you can train the next rank.", "TRAIN line on screen")
@@ -50,7 +52,7 @@ M.eq(#M.sounds, 3, "another profession isn't held back")
 -- Reaching the trained cap: the harsher sound, right away.
 M.skillUp(393, 4)                    -- Skinning 75/75
 M.eq(#M.sounds, 4, "capped sound played inside the TRAIN gap")
-M.eq(last()[1], 12867, "capped sound is Alarm clock 1")
+M.eq(last()[1], 12867, "capped sound is Alarm clock 1, found by its SOUNDKIT name")
 M.eq(M.chatCount("Skinning is stuck at 75/75 until you train the next rank."), 1, "capped chat line")
 M.eq(M.onScreen(), "Skinning is stuck at 75/75 until you train the next rank.", "capped line replaces the TRAIN one")
 M.eq(table.concat(line.text.textColor, ","), "1,0.25,0.25", "capped line is red")
@@ -93,7 +95,7 @@ assert(M.onScreen(), "the message still shows")
 NOW = NOW + 21
 ns.cfg.soundTrain = "A SharedMedia sound that is gone"
 M.skillUp(197)
-M.eq(last()[1], 847, "a missing sound falls back to the default")
+M.eq(last()[1], TRAIN_FILE, "a missing sound falls back to the default")
 
 -- "Also show it on screen" off: chat only.
 ns.cfg.alertOnScreen = false
@@ -122,10 +124,10 @@ NOW = NOW + 21
 M.skillUp(197)
 M.eq(#M.sounds, before, "no sound while alerts are off")
 M.slash("alerts")
-ns.cfg.soundTrain = "Quest failed"
+ns.cfg.soundTrain = "Three notes (low)"
 M.slash("alerts test")               -- M.slash runs the 2 s timer too
 M.eq(#M.sounds, before + 2, "test plays both sounds")
-M.eq(M.sounds[#M.sounds - 1][1], 847, "test: TRAIN first")
+M.eq(M.sounds[#M.sounds - 1][1], TRAIN_FILE, "test: TRAIN first")
 M.eq(last()[1], 12867, "test: then capped")
 
 -- The sound list: None, then the game's sounds under a heading, alphabetical.
@@ -135,7 +137,6 @@ local function listed()
     return table.concat(names, ",")
 end
 local GAME = "None,[SimpleSkillWatch],Two notes,Three notes,Three notes (bell),Three notes (low),"
-    .. "Three notes (low, 1.25x),Three notes (low, 1.5x),Three notes (low, 1.75x),Three notes (low, 2x),"
     .. "[Game sounds],Alarm clock 1,Alarm clock 2,Boss warning,Invite declined,Map ping,"
     .. "PvP queue,Quest failed,Raid warning,Ready check,Whisper"
 M.eq(listed(), GAME, "own sounds, then game sounds alphabetical; no last heading without other addons' sounds")
@@ -155,7 +156,7 @@ for _, s in ipairs(ns.GetSounds()) do
         f:close()
     end
 end
-M.eq(own, 8, "eight own sounds")
+M.eq(own, 4, "four own sounds")
 
 -- SharedMedia sounds follow under their own heading, alphabetical whatever
 -- their case, without a second None; they play as files.
@@ -174,7 +175,7 @@ LibStub = nil
 -- Settings window: the pickers show the chosen sounds; clicking a row in the
 -- list plays it and chooses it; the list stays open.
 M.slash("")
-local trainBtn = M.findByText("Button", "Quest failed")
+local trainBtn = M.findByText("Button", "Three notes (low)")
 local capBtn = M.findByText("Button", "Alarm clock 1")
 assert(trainBtn and capBtn, "both sound pickers show their sound")
 capBtn.scripts.OnClick(capBtn)
@@ -218,7 +219,7 @@ M.eq(#M.sounds, before + 1, "speaker plays a sound")
 M.eq(last()[1], 8960, "the picker's own sound (Ready check)")
 M.eq(list.shown, false, "without opening the list")
 trainBtn.play.scripts.OnClick(trainBtn.play)
-M.eq(last()[1], 847, "the other speaker plays the other sound")
+M.eq(last()[1], TRAIN_FILE, "the other speaker plays the other sound")
 M.eq(speaker.enabledV, true, "speaker usable while alerts are on")
 -- nothing to play for "None", or while alerts are off
 ns.cfg.soundCap = "None"; ns.RefreshPanel()

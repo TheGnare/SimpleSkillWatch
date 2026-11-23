@@ -1,8 +1,8 @@
--- SimpleSkillWatch v1.0.10 for World of Warcraft: Forever (interface 16001)
+-- SimpleSkillWatch v1.0.11 for World of Warcraft: Forever (interface 16001)
 -- Shows weapon/defense and profession skills as colored bars in a movable frame.
 
 local ADDON, ns = ...
-ns.VERSION = "1.0.10"
+ns.VERSION = "1.0.11"
 ns.NAME = "SimpleSkillWatch"
 
 ---------------------------------------------------------------------------
@@ -96,7 +96,7 @@ local DEFAULTS = {
     profAlerts     = true, -- professions: sound + chat line when a skill-up leaves one at TRAIN or at its trained cap
     alertOnScreen  = true, -- ...and the same line near the top of the screen
     alertScreenTime = 6,   -- ...for this many seconds before it fades
-    soundTrain     = "Quest failed", -- ...sound when the next rank can be trained
+    soundTrain     = "Three notes (low)", -- ...sound when the next rank can be trained
     soundCap       = "Alarm clock 1", -- ...sound when the skill is stuck at its trained cap
     scale          = 1.0,
     width          = 230,  -- frame width; never below ns.MinWidth()
@@ -129,10 +129,6 @@ local OWN_SOUNDS = {
     { name = "Three notes",        file = SOUND_DIR .. "ThreeNotes.ogg" },
     { name = "Three notes (bell)", file = SOUND_DIR .. "ThreeNotesBell.ogg" },
     { name = "Three notes (low)",  file = SOUND_DIR .. "ThreeNotesLow.ogg" },
-    { name = "Three notes (low, 1.25x)", file = SOUND_DIR .. "ThreeNotesLow125.ogg" },
-    { name = "Three notes (low, 1.5x)",  file = SOUND_DIR .. "ThreeNotesLow150.ogg" },
-    { name = "Three notes (low, 1.75x)", file = SOUND_DIR .. "ThreeNotesLow175.ogg" },
-    { name = "Three notes (low, 2x)",    file = SOUND_DIR .. "ThreeNotesLow200.ogg" },
 }
 
 -- Alert sounds: the game's own, by SOUNDKIT name (id is that sound's usual
