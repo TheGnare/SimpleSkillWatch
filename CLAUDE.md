@@ -123,9 +123,8 @@ around the moment shows what the game sent. Remove a line once he confirms it.
 - Gathering reminders of any kind (TRAIN or cap), and silence for a grey node.
 - Mining and skinning (same rule as herbs; the "Skinnable" tooltip line is a guess).
 - The minimap button on a square minimap.
-- (1.1.1) Skills tab heading checkboxes (how they look as checkboxes in gold), and the
-  side-by-side frame shrinking to one column when one side is empty. The Other heading
-  untested: Gnare has no character with Riding or Lockpicking yet.
+- The Other heading's checkbox on the Skills tab (1.1.1; Weapons and Professions
+  confirmed). Gnare has no character with Riding or Lockpicking yet.
 
 ## Saved data
 
