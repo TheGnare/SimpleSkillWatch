@@ -215,8 +215,11 @@ local function newObj(kind)
                 return g
             elseif k == "GetFrameLevel" then return 1
             elseif k == "GetPoint" then return "TOPLEFT", nil, "BOTTOMLEFT", 100, 200
-            elseif k == "SetPoint" then self.lastPoint = a
-            elseif k == "ClearAllPoints" then self.lastPoint = nil
+            elseif k == "SetPoint" then
+                self.lastPoint = a
+                local pts = rawget(self, "points") or {}
+                pts[a[1]] = a; self.points = pts   -- every anchor, by point name
+            elseif k == "ClearAllPoints" then self.lastPoint = nil; self.points = {}
             elseif k == "SetFont" then self.font = a[1]; self.fontSize = a[2]
             elseif k == "GetFont" then return "Fonts\\FRIZQT__.TTF", 10, ""
             elseif k == "SetWidth" then self.width = a[1]

@@ -993,7 +993,7 @@ local function BuildAlertsPage(cfg, D)
 end
 
 -- Skills tab: weapons in the left column, professions and other on the right.
-local SKILLS_LIST_TOP = -70 -- the skill columns start below the two options
+local SKILLS_LIST_TOP = -92 -- the skill columns start below the three options
 
 local function BuildSkillsPage()
     local cfg = ns.cfg
@@ -1018,6 +1018,17 @@ local function BuildSkillsPage()
         function() return cfg.alsoUnarmed end,
         function(v) cfg.alsoUnarmed = v; ns.Render(); ns.RefreshPanel() end,
         function() return cfg.onlyEquipped end)
+    local rangedCheck = Check(p, "Only show ranged", COL1_X + 20, -62,
+        function() return cfg.onlyRanged end,
+        function(v) cfg.onlyRanged = v; ns.Render(); ns.RefreshPanel() end,
+        function() return cfg.onlyEquipped end)
+    rangedCheck:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Only show ranged")
+        GameTooltip:AddLine("Of your equipped weapons, shows only the ranged one: bow, gun, crossbow, wand or thrown. Defense still follows its checkbox, and Unarmed shows only with \"Still show Unarmed\".", 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    rangedCheck:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
     pages.Skills = p
 end

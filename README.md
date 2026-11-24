@@ -14,7 +14,7 @@ A small, movable frame for **World of Warcraft: Forever** that shows your weapon
 - **Thrown charges**: with a thrown weapon equipped, the Thrown bar shows its durability (its charges), e.g. `Thrown (154/200)`, turning bright yellow below a threshold (default 30%).
 - **Picks up new skills automatically**: learning a weapon skill, profession or rank, or gaining skill points, updates the frame right away.
 - **Customizable look**: scale, width, background and bar opacity, font (including fonts other addons share through LibSharedMedia) and font size, title on or off, and whether the frame grows up or down as it gets taller (it's always kept on screen).
-- **Only show equipped weapon**: optionally hide weapon skills you aren't using, so the frame shows just your equipped weapons plus Defense (and Unarmed if you like). Updates as you swap.
+- **Only show equipped weapon**: optionally hide weapon skills you aren't using, so the frame shows just your equipped weapons plus Defense (and Unarmed if you like), or only your ranged weapon (bow, gun, crossbow, wand or thrown). Updates as you swap.
 - **Stacked or side by side**: Weapons above Professions, or next to each other (either way round). If one side has nothing to show, the frame is just one column wide.
 - **Hide what you don't need**: uncheck single skills, or a whole group (Weapons, Professions, Other) at once, e.g. weapons and Defense on a caster.
 - **Lock** the frame in place to make it click-through. The padlock in the corner stays clickable either way: open when unlocked, closed (and dimmed) when locked. Each character has its own lock, and new characters start unlocked.
@@ -44,7 +44,7 @@ Open the settings window with `/sskw`, by right-clicking the frame while it's un
 |---|---|
 | **Frame** | Show frame, show title, lock (click-through, this character only), minimap button, grow direction, layout (stacked, side by side, flipped), scale, width (per column), background and bar opacity |
 | **Text** | Font and font size |
-| **Skills** | Only show equipped weapon (plus Defense, optionally Unarmed), and checkboxes to hide or show individual skills. Each heading (Weapons, Professions, Other) has its own checkbox that hides the whole group, including skills learned later |
+| **Skills** | Only show equipped weapon (plus Defense, optionally Unarmed, or only the ranged one), and checkboxes to hide or show individual skills. Each heading (Weapons, Professions, Other) has its own checkbox that hides the whole group, including skills learned later |
 | **Alerts** | Weapon thresholds and the low weapon skill warning; thrown charges and the low-charges alert; profession training rules and skill cap; profession alerts, their two sounds, whether the message also shows on screen and for how long |
 | **Profile** | Switch this character's profile, save the current settings as a new profile, copy another profile into this one, or delete one |
 
@@ -76,7 +76,7 @@ A profile holds every setting plus your hidden skills and groups. Frame position
 | `/sskw cap <n>` | Profession skill cap (default 300) |
 | `/sskw trainreqs` | Toggle TRAIN by trainer requirements |
 | `/sskw warn` · `pulse` | Toggle the low weapon skill warning, or its pulse |
-| `/sskw equipped` · `unarmed` | Only show equipped weapon skills, or also keep Unarmed |
+| `/sskw equipped` · `unarmed` · `ranged` | Only show equipped weapon skills, also keep Unarmed, or only the ranged one |
 | `/sskw charges` | Toggle thrown charges on the Thrown bar |
 | `/sskw lowcharges [5-80]` | Toggle the low-charges alert, or set its threshold |
 | `/sskw alerts` · `alerts test` | Toggle profession alerts, or try both of them now |

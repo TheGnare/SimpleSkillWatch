@@ -1,8 +1,8 @@
--- SimpleSkillWatch v1.1.1 for World of Warcraft: Forever (interface 16001)
+-- SimpleSkillWatch v1.1.2 for World of Warcraft: Forever (interface 16001)
 -- Shows weapon/defense and profession skills as colored bars in a movable frame.
 
 local ADDON, ns = ...
-ns.VERSION = "1.1.1"
+ns.VERSION = "1.1.2"
 ns.NAME = "SimpleSkillWatch"
 
 ---------------------------------------------------------------------------
@@ -67,6 +67,8 @@ local WEAPON_SKILL_BY_SUBCLASS = {
     [18] = { 226 },       -- Crossbows
     [19] = { 228 },       -- Wands
 }
+-- Bows, Guns, Crossbows, Wands, Thrown (for "Only show ranged")
+local RANGED_SKILL_IDS = { [45] = true, [46] = true, [226] = true, [228] = true, [176] = true }
 local WEAPON_SLOTS = { 16, 17, 18 }   -- main hand, off hand, ranged
 local ITEM_CLASS_WEAPON = 2
 local SUBCLASS_THROWN = 16
@@ -87,6 +89,7 @@ local DEFAULTS = {
     pulseWarning   = true, -- ...and pulse it (otherwise a steady border)
     onlyEquipped   = false, -- weapons: show only the equipped weapon skills (plus Defense)
     alsoUnarmed    = false, -- ...and always Unarmed too
+    onlyRanged     = false, -- ...and of those, only the ranged one (bow, gun, crossbow, wand, thrown)
     showThrownCharges = true, -- Thrown bar: show the equipped thrown weapon's durability (its charges)
     alertLowCharges   = true, -- ...in bright yellow when low
     lowChargesPct     = 30,   -- ...below this % of max
@@ -595,6 +598,7 @@ local function Visible(id, kind, equipped)
     if cfg.hiddenSections[kind] then return false end
     if ns.EquipFilterControls(id, kind) then
         if id == UNARMED_SKILL_ID and cfg.alsoUnarmed then return true end
+        if cfg.onlyRanged and not RANGED_SKILL_IDS[id] then return false end
         return equipped and equipped[id] and true or false
     end
     return not cfg.ignored[id]
@@ -1580,6 +1584,8 @@ local function Render()
         emptyText:SetText(next(charDB.known)
             and "Every skill is hidden. Show some on the Skills tab (/sskw)."
             or "No skills found yet. Open the Skills tab (C) once with every group expanded.")
+        -- without the title the padlock sits in this corner: start below it
+        if not cfg.showTitle then y = y - m.lock end
         emptyText:ClearAllPoints()
         emptyText:SetPoint("TOPLEFT", PAD, y - 2)
         emptyText:SetPoint("RIGHT", -PAD, 0)
@@ -2221,7 +2227,7 @@ local HELP = {
     "/sskw font <name> | fontinfo",
     "/sskw trainreqs   toggle TRAIN-by-trainer-requirements",
     "/sskw warn | pulse   toggle the low weapon skill warning / its pulse",
-    "/sskw equipped | unarmed   only show equipped weapon skills / still show Unarmed",
+    "/sskw equipped | unarmed | ranged   only show equipped weapon skills / still show Unarmed / only the ranged one",
     "/sskw charges   toggle thrown charges on the Thrown bar",
     "/sskw lowcharges [5-80]   toggle the low-charges alert, or set its %",
     "/sskw alerts [test]   toggle profession alerts (sound and message), or try them",
@@ -2260,6 +2266,9 @@ SlashCmdList.SIMPLESKILLWATCH = function(msg)
     elseif cmd == "equipped" then
         cfg.onlyEquipped = not cfg.onlyEquipped; Changed()
         Print("Only show equipped weapon: " .. (cfg.onlyEquipped and "on" or "off"))
+    elseif cmd == "ranged" then
+        cfg.onlyRanged = not cfg.onlyRanged; Changed()
+        Print("Only show ranged: " .. (cfg.onlyRanged and "on" or "off") .. (cfg.onlyEquipped and "" or " (applies with /sskw equipped)"))
     elseif cmd == "unarmed" then
         cfg.alsoUnarmed = not cfg.alsoUnarmed; Changed()
         Print("Still show Unarmed: " .. (cfg.alsoUnarmed and "on" or "off") .. (cfg.onlyEquipped and "" or " (applies with /sskw equipped)"))

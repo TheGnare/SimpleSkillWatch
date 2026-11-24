@@ -5,7 +5,8 @@ All notable changes to SimpleSkillWatch. Versions follow major.minor.patch.
 ## Unreleased
 - Skills tab: the Weapons, Professions and Other headings now have checkboxes. Uncheck one to hide that whole group from the frame, including skills you learn later; the skill checkboxes under it are greyed out and keep their choices for when you check it again. A hidden Professions group gives no alerts. Defaults keeps hidden groups, like hidden skills.
 - Side by side: when one side has nothing to show (every weapon hidden, or no professions), the frame shrinks to one column instead of leaving a blank half.
-- With every skill hidden, the frame says so instead of "No skills found yet".
+- With every skill hidden, the frame says so instead of "No skills found yet" (below the padlock when the title is hidden).
+- Skills tab: **Only show ranged**, under "Only show equipped weapon": of your equipped weapons, only the bow, gun, crossbow, wand or thrown weapon shows (plus Defense). Also `/sskw ranged`.
 
 ## 1.1.0
 - **Profession alerts**: a sound, a chat line and a line near the top of the screen while a profession is at TRAIN (the sound and on-screen line at most once every 20 seconds per profession, the chat line every time), and a harsher sound, every time, while it's stuck at its trained cap. It alerts on each skill-up, and on each craft or gather that could have given a point (grey recipes and grey nodes don't). Never at the profession skill cap, and never for weapons or hidden skills. On by default; turn it off on the Alerts tab or with `/sskw alerts`. `/sskw alerts test` tries both. The on-screen line stays for 6 seconds, then fades; change that on the Alerts tab or with `/sskw alerttime <1-30>`.

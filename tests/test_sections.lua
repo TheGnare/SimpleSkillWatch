@@ -94,6 +94,21 @@ M.eq(M.barNames(), "", "nothing shown")
 assert(M.findByText("CreateFontString", "Every skill is hidden. Show some on the Skills tab (/sskw)."),
     "frame explains that everything is hidden")
 
+-- With the title hidden, the padlock is in that corner: the text starts below it.
+local function textTop()
+    for _, f in ipairs(M.frames) do
+        if f.kind == "CreateFontString" and f.text and f.text:find("^Every skill is hidden") then
+            return f.points.TOPLEFT[3]
+        end
+    end
+end
+M.slash("title")
+M.eq(ns.cfg.showTitle, false, "title hidden")
+local lockTop = M.lockButton().points.TOPRIGHT[3]
+local LOCK_SIZE = 14                -- at the default font size
+assert(textTop() <= lockTop - LOCK_SIZE, "text starts below the padlock")
+M.slash("title")
+
 -- Defaults keeps hidden groups, like hidden skills.
 ns.ResetDefaults()
 M.eq(p.hiddenSections.weapon, true, "Defaults keeps hidden groups")
