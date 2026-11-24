@@ -111,6 +111,19 @@ by pulling and typing `/reload` in game, so a change isn't testable until it's p
   whose contents changed: after regenerating an existing `Sounds/*.ogg`, tell Gnare to
   quit and restart the client (or give the file a new name).
 
+## Not yet confirmed in game (as of 1.1.0)
+
+Built from logs and mock tests only. If Gnare reports on one, a `/sskw castlog` taken
+around the moment shows what the game sent. Remove a line once he confirms it.
+
+- Profession alerts at the trained cap: the capped sound on reaching it, and again on
+  every non-grey craft or gather with no 20 second hold. (At TRAIN, the skill-up alert,
+  the reminder about a second after a craft that gave no point, the 20 second hold on
+  sound and on-screen line, and silence for a grey recipe are all confirmed.)
+- Gathering reminders of any kind (TRAIN or cap), and silence for a grey node.
+- Mining and skinning (same rule as herbs; the "Skinnable" tooltip line is a guess).
+- The minimap button on a square minimap.
+
 ## Saved data
 
 - `SimpleSkillWatchDB` (account): `profiles[name]` holds every setting plus `ignored`
