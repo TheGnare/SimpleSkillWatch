@@ -126,7 +126,6 @@ around the moment shows what the game sent. Remove a line once he confirms it.
 - (1.1.1) Skills tab heading checkboxes (how they look as checkboxes in gold), and the
   side-by-side frame shrinking to one column when one side is empty. The Other heading
   untested: Gnare has no character with Riding or Lockpicking yet.
-- (1.1.2) "Only show ranged" (wands and thrown especially).
 
 ## Saved data
 
