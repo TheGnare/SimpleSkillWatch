@@ -111,7 +111,7 @@ by pulling and typing `/reload` in game, so a change isn't testable until it's p
   whose contents changed: after regenerating an existing `Sounds/*.ogg`, tell Gnare to
   quit and restart the client (or give the file a new name).
 
-## Not yet confirmed in game (as of 1.1.0)
+## Not yet confirmed in game (as of 1.1.2)
 
 Built from logs and mock tests only. If Gnare reports on one, a `/sskw castlog` taken
 around the moment shows what the game sent. Remove a line once he confirms it.

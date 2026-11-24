@@ -2,7 +2,7 @@
 
 All notable changes to SimpleSkillWatch. Versions follow major.minor.patch.
 
-## Unreleased
+## 1.1.2
 - Skills tab: the Weapons, Professions and Other headings now have checkboxes. Uncheck one to hide that whole group from the frame, including skills you learn later; the skill checkboxes under it are greyed out and keep their choices for when you check it again. A hidden Professions group gives no alerts. Defaults keeps hidden groups, like hidden skills.
 - Side by side: when one side has nothing to show (every weapon hidden, or no professions), the frame shrinks to one column instead of leaving a blank half.
 - With every skill hidden, the frame says so instead of "No skills found yet" (below the padlock when the title is hidden).
