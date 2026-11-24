@@ -202,7 +202,10 @@ local function newObj(kind)
             elseif k == "RegisterEvent" then self.events[a[1]] = true
             elseif k == "RegisterUnitEvent" then self.events[a[1]] = "unit:" .. tostring(a[2])
             elseif k == "UnregisterEvent" then self.events[a[1]] = nil
-            elseif k == "CreateFontString" or k == "CreateTexture" then return newObj(k)
+            elseif k == "CreateFontString" then
+                local fs = newObj(k); frames[#frames + 1] = fs -- findable by M.findByText
+                return fs
+            elseif k == "CreateTexture" then return newObj(k)
             elseif k == "CreateAnimationGroup" then
                 local g = newObj("AnimGroup"); g.playing = false
                 g.Play = function(s) s.playing = true end

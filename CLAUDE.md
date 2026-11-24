@@ -123,11 +123,13 @@ around the moment shows what the game sent. Remove a line once he confirms it.
 - Gathering reminders of any kind (TRAIN or cap), and silence for a grey node.
 - Mining and skinning (same rule as herbs; the "Skinnable" tooltip line is a guess).
 - The minimap button on a square minimap.
+- (1.1.1) Skills tab heading checkboxes (how they look as checkboxes in gold), and the
+  side-by-side frame shrinking to one column when one side is empty.
 
 ## Saved data
 
 - `SimpleSkillWatchDB` (account): `profiles[name]` holds every setting plus `ignored`
-  skills; also the settings window position and tab, and the last cast log (`castlog`).
+  skills and `hiddenSections` (`weapon`/`prof`/`other` = true, from the Skills tab headings); also the settings window position and tab, and the last cast log (`castlog`).
 - `SimpleSkillWatchCharDB` (character): `profile`, `pos`, `locked`, `known` skills,
   `minimapAngle` (the minimap button's place, in degrees).
 - New characters get a profile named after their class, copied from `Default` if it

@@ -2,6 +2,11 @@
 
 All notable changes to SimpleSkillWatch. Versions follow major.minor.patch.
 
+## Unreleased
+- Skills tab: the Weapons, Professions and Other headings now have checkboxes. Uncheck one to hide that whole group from the frame, including skills you learn later; the skill checkboxes under it are greyed out and keep their choices for when you check it again. A hidden Professions group gives no alerts. Defaults keeps hidden groups, like hidden skills.
+- Side by side: when one side has nothing to show (every weapon hidden, or no professions), the frame shrinks to one column instead of leaving a blank half.
+- With every skill hidden, the frame says so instead of "No skills found yet".
+
 ## 1.1.0
 - **Profession alerts**: a sound, a chat line and a line near the top of the screen while a profession is at TRAIN (the sound and on-screen line at most once every 20 seconds per profession, the chat line every time), and a harsher sound, every time, while it's stuck at its trained cap. It alerts on each skill-up, and on each craft or gather that could have given a point (grey recipes and grey nodes don't). Never at the profession skill cap, and never for weapons or hidden skills. On by default; turn it off on the Alerts tab or with `/sskw alerts`. `/sskw alerts test` tries both. The on-screen line stays for 6 seconds, then fades; change that on the Alerts tab or with `/sskw alerttime <1-30>`.
 - Both alert sounds are picked from a list on the Alerts tab: SimpleSkillWatch's own short chimes, ten of the game's own sounds, then any shared by other addons through LibSharedMedia, each group under its own heading. The defaults are SimpleSkillWatch's low three-note chime at TRAIN and the game's "Alarm clock 1" at the trained cap. Click one to hear it and choose it, or click the speaker beside a picker to hear the one that's chosen. They play even with sound effects turned off.

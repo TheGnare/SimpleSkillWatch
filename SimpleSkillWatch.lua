@@ -1,8 +1,8 @@
--- SimpleSkillWatch v1.1.0 for World of Warcraft: Forever (interface 16001)
+-- SimpleSkillWatch v1.1.1 for World of Warcraft: Forever (interface 16001)
 -- Shows weapon/defense and profession skills as colored bars in a movable frame.
 
 local ADDON, ns = ...
-ns.VERSION = "1.1.0"
+ns.VERSION = "1.1.1"
 ns.NAME = "SimpleSkillWatch"
 
 ---------------------------------------------------------------------------
@@ -279,6 +279,9 @@ local function ResolveProfile()
     activeProfile = db.profiles[name]
     CopyDefaults(activeProfile, DEFAULTS)
     activeProfile.ignored = activeProfile.ignored or {}
+    -- whole groups hidden with their heading's checkbox on the Skills tab
+    -- (added in 1.1.1; kept by Defaults, like hidden skills)
+    activeProfile.hiddenSections = activeProfile.hiddenSections or {}
 end
 
 function ns.CurrentProfile()
@@ -577,8 +580,19 @@ function ns.EquipFilterControls(id, kind)
     return cfg.onlyEquipped and kind == "weapon" and id ~= DEFENSE_SKILL_ID
 end
 
+-- A whole group (weapon, prof, other) turned off on the Skills tab.
+function ns.SectionHidden(kind)
+    return cfg.hiddenSections[kind] and true or false
+end
+
+-- A profession hidden by its own checkbox or with the whole Professions group.
+local function ProfHidden(id)
+    return cfg.ignored[id] or cfg.hiddenSections.prof
+end
+
 -- equipped: set of skill IDs currently wielded (needed when onlyEquipped is on)
 local function Visible(id, kind, equipped)
+    if cfg.hiddenSections[kind] then return false end
     if ns.EquipFilterControls(id, kind) then
         if id == UNARMED_SKILL_ID and cfg.alsoUnarmed then return true end
         return equipped and equipped[id] and true or false
@@ -888,7 +902,7 @@ local function CheckProfAlerts()
             if type(rank) == "number" and type(max) == "number" then
                 local before = alertSeen[id]
                 alertSeen[id] = rank -- hidden skills too, so un-hiding one never alerts late
-                if before and rank > before and not cfg.ignored[id] then
+                if before and rank > before and not ProfHidden(id) then
                     local level = ProfAlertLevel(id, rank, max)
                     if level then ns.ProfAlert(level, s.name or k.name, rank, max, id) end
                 end
@@ -999,7 +1013,7 @@ local function CheckCraftAlert(castID, spellID)
     if not cfg or not cfg.profAlerts or IsSecret(spellID) or type(spellID) ~= "number" then return end
     local id = RecipeProfession(spellID)
     local k = id and charDB.known[id]
-    if not k or k.kind ~= "prof" or cfg.ignored[id] then return end
+    if not k or k.kind ~= "prof" or ProfHidden(id) then return end
     local s = ReadSkill(C_SkillInfo.GetSkillLineInfoByID(id), id)
     local rank, max = s and s.rank, s and s.maxRank
     if type(rank) ~= "number" or type(max) ~= "number" then return end
@@ -1025,7 +1039,7 @@ local function CheckCraftAlert(castID, spellID)
     -- has done the alerting (TRAIN, or the capped alert if that point reached
     -- the cap); if not, this is the reminder.
     C_Timer.After(TRAIN_CAST_DELAY, function()
-        if not cfg or cfg.ignored[id] then return end
+        if not cfg or ProfHidden(id) then return end
         local now = ReadSkill(C_SkillInfo.GetSkillLineInfoByID(id), id)
         if not now or now.rank ~= rank or type(now.maxRank) ~= "number" then return end
         if ProfAlertLevel(id, rank, now.maxRank) == ALERT_TRAIN then
@@ -1208,6 +1222,10 @@ local function SideBySide()
     return cfg.layout == "side" or cfg.layout == "flipped"
 end
 
+-- Set by Render: side by side, but one of the two columns has nothing to show
+-- (all weapons hidden, or no professions), so the frame is one column wide.
+local oneColumn = false
+
 function ns.RowWidth()
     local colW = math.max(ns.MinWidth(), math.min(cfg.width or DEFAULTS.width, MAX_WIDTH))
     return colW - PAD * 2
@@ -1215,7 +1233,7 @@ end
 
 local function ApplyFrameSettings()
     local rowW = ns.RowWidth()
-    if SideBySide() then
+    if SideBySide() and not oneColumn then
         frame:SetWidth(PAD + rowW + COL_GAP + rowW + PAD)
     else
         frame:SetWidth(PAD + rowW + PAD)
@@ -1505,13 +1523,21 @@ local function Render()
     local rowW = ns.RowWidth()
     local colX = { PAD, PAD + rowW + COL_GAP }
     local colY = { top, top }
+    -- When one side would be empty, everything goes in one column.
     local column
-    if cfg.layout == "side" then
-        column = { weapon = 1, prof = 2, other = 2 }
-    elseif cfg.layout == "flipped" then
-        column = { weapon = 2, prof = 1, other = 1 }
-    else
+    local weaponsOnly = #groups.prof == 0 and #groups.other == 0
+    oneColumn = SideBySide() and (#groups.weapon == 0 or weaponsOnly)
+    if oneColumn or not SideBySide() then
         column = { weapon = 1, prof = 1, other = 1 }
+    elseif cfg.layout == "side" then
+        column = { weapon = 1, prof = 2, other = 2 }
+    else
+        column = { weapon = 2, prof = 1, other = 1 }
+    end
+    if SideBySide() and not oneColumn then
+        frame:SetWidth(PAD + rowW + COL_GAP + rowW + PAD)
+    else
+        frame:SetWidth(PAD + rowW + PAD)
     end
 
     for _, sec in ipairs(SECTIONS) do
@@ -1551,6 +1577,9 @@ local function Render()
     end
 
     if rIndex == 0 then
+        emptyText:SetText(next(charDB.known)
+            and "Every skill is hidden. Show some on the Skills tab (/sskw)."
+            or "No skills found yet. Open the Skills tab (C) once with every group expanded.")
         emptyText:ClearAllPoints()
         emptyText:SetPoint("TOPLEFT", PAD, y - 2)
         emptyText:SetPoint("RIGHT", -PAD, 0)

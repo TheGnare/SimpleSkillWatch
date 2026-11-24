@@ -1038,16 +1038,35 @@ local function LayoutSkills()
         if s.kind ~= lastKind then
             lastKind = s.kind
             hi = hi + 1
+            -- the heading is a checkbox: unchecked hides the whole group
             local h = skillHeaders[hi]
             if not h then
-                h = p:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                h = NewCheck(p)
+                h.label:SetFontObject("GameFontNormal")
+                h:SetScript("OnClick", function(self)
+                    CheckSound(self:GetChecked())
+                    cfg.hiddenSections[self.sectionKey] = (not self:GetChecked()) or nil
+                    ns.Render()
+                    ns.RefreshPanel()
+                end)
+                h:SetScript("OnEnter", function(self)
+                    local title = KIND_TITLES[self.sectionKey] or self.sectionKey
+                    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                    GameTooltip:SetText("Show " .. title)
+                    GameTooltip:AddLine("Uncheck to hide the whole " .. title .. " group, including skills you learn later.", 1, 1, 1, true)
+                    GameTooltip:AddLine("Your choices below come back when you check it again.", 0.8, 0.8, 0.8, true)
+                    GameTooltip:Show()
+                end)
+                h:SetScript("OnLeave", function() GameTooltip:Hide() end)
                 skillHeaders[hi] = h
             end
             -- a second group in the same column gets a little space above it
             if colY[col] < SKILLS_LIST_TOP then colY[col] = colY[col] - 8 end
+            h.sectionKey = s.kind
             h:ClearAllPoints()
-            h:SetPoint("TOPLEFT", colX[col], colY[col] - 4)
-            h:SetText(KIND_TITLES[s.kind] or s.kind)
+            h:SetPoint("TOPLEFT", colX[col], colY[col])
+            h.label:SetText(KIND_TITLES[s.kind] or s.kind)
+            h:SetChecked(not ns.SectionHidden(s.kind))
             h:Show()
             colY[col] = colY[col] - 22
         end
@@ -1065,11 +1084,12 @@ local function LayoutSkills()
         end
         c.skillID = s.id
         c:ClearAllPoints()
-        c:SetPoint("TOPLEFT", colX[col] + 4, colY[col])
+        c:SetPoint("TOPLEFT", colX[col] + 18, colY[col])
         c.label:SetText(s.name)
         c:SetChecked(not cfg.ignored[s.id])
-        -- greyed out while "Only show equipped weapon" decides this skill
-        local controlled = ns.EquipFilterControls(s.id, s.kind)
+        -- greyed out while its group is hidden, or while "Only show equipped
+        -- weapon" decides this skill
+        local controlled = ns.SectionHidden(s.kind) or ns.EquipFilterControls(s.id, s.kind)
         c:SetEnabled(not controlled)
         c:SetAlpha(controlled and 0.4 or 1)
         c:Show()
@@ -1081,7 +1101,7 @@ local function LayoutSkills()
     if ci == 0 then
         p.hint:SetText("No skills seen yet. Open the Skills tab (C) with every group expanded.")
     else
-        p.hint:SetText("Uncheck a skill to hide it from the frame.")
+        p.hint:SetText("Uncheck a skill to hide it from the frame, or a heading to hide its whole group.")
     end
     return math.min(colY[1], colY[2]) - 4
 end
